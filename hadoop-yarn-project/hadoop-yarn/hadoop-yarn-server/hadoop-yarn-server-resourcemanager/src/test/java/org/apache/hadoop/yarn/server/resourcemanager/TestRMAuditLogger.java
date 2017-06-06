@@ -330,55 +330,55 @@ public class TestRMAuditLogger {
    * A special extension of {@link TestImpl} RPC server with 
    * {@link TestImpl#ping()} testing the audit logs.
    */
-  private class MyTestRPCServer extends TestRpcBase.PBServerImpl {
-    @Override
-    public TestProtos.EmptyResponseProto ping(
-        RpcController unused, TestProtos.EmptyRequestProto request)
-        throws ServiceException {
-      // Ensure clientId is received
-      byte[] clientId = Server.getClientId();
-      Assert.assertNotNull(clientId);
-      Assert.assertEquals(ClientId.BYTE_LENGTH, clientId.length);
-      // test with ip set
-      testSuccessLogFormat(true);
-      testFailureLogFormat(true);
-      return TestProtos.EmptyResponseProto.newBuilder().build();
-    }
-  }
+//  private class MyTestRPCServer extends TestRpcBase.PBServerImpl {
+//    @Override
+//    public TestProtos.EmptyResponseProto ping(
+//        RpcController unused, TestProtos.EmptyRequestProto request)
+//        throws ServiceException {
+//      // Ensure clientId is received
+//      byte[] clientId = Server.getClientId();
+//      Assert.assertNotNull(clientId);
+//      Assert.assertEquals(ClientId.BYTE_LENGTH, clientId.length);
+//      // test with ip set
+//      testSuccessLogFormat(true);
+//      testFailureLogFormat(true);
+//      return TestProtos.EmptyResponseProto.newBuilder().build();
+//    }
+//  }
 
   /**
    * Test {@link RMAuditLogger} with IP set.
    */
-  @Test  
-  public void testRMAuditLoggerWithIP() throws Exception {
-    Configuration conf = new Configuration();
-    RPC.setProtocolEngine(conf, TestRpcService.class,
-        ProtobufRpcEngine.class);
-
-    // Create server side implementation
-    MyTestRPCServer serverImpl = new MyTestRPCServer();
-    BlockingService service = TestRpcServiceProtos.TestProtobufRpcProto
-        .newReflectiveBlockingService(serverImpl);
-
-    // start the IPC server
-    Server server = new RPC.Builder(conf)
-        .setProtocol(TestRpcService.class)
-        .setInstance(service).setBindAddress("0.0.0.0")
-        .setPort(0).setNumHandlers(5).setVerbose(true).build();
-
-    server.start();
-
-    InetSocketAddress addr = NetUtils.getConnectAddress(server);
-
-    // Make a client connection and test the audit log
-    TestRpcService proxy = RPC.getProxy(TestRpcService.class,
-        TestProtocol.versionID, addr, conf);
-    // Start the testcase
-    TestProtos.EmptyRequestProto pingRequest =
-        TestProtos.EmptyRequestProto.newBuilder().build();
-    proxy.ping(null, pingRequest);
-
-    server.stop();
-    RPC.stopProxy(proxy);
-  }
+//  @Test  
+//  public void testRMAuditLoggerWithIP() throws Exception {
+//    Configuration conf = new Configuration();
+//    RPC.setProtocolEngine(conf, TestRpcService.class,
+//        ProtobufRpcEngine.class);
+//
+//    // Create server side implementation
+//    MyTestRPCServer serverImpl = new MyTestRPCServer();
+//    BlockingService service = TestRpcServiceProtos.TestProtobufRpcProto
+//        .newReflectiveBlockingService(serverImpl);
+//
+//    // start the IPC server
+//    Server server = new RPC.Builder(conf)
+//        .setProtocol(TestRpcService.class)
+//        .setInstance(service).setBindAddress("0.0.0.0")
+//        .setPort(0).setNumHandlers(5).setVerbose(true).build();
+//
+//    server.start();
+//
+//    InetSocketAddress addr = NetUtils.getConnectAddress(server);
+//
+//    // Make a client connection and test the audit log
+//    TestRpcService proxy = RPC.getProxy(TestRpcService.class,
+//        TestProtocol.versionID, addr, conf);
+//    // Start the testcase
+//    TestProtos.EmptyRequestProto pingRequest =
+//        TestProtos.EmptyRequestProto.newBuilder().build();
+//    proxy.ping(null, pingRequest);
+//
+//    server.stop();
+//    RPC.stopProxy(proxy);
+//  }
 }

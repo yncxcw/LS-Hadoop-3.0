@@ -424,6 +424,7 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
 
     String containerIdStr = container.getContainerId().toString();
     String runAsUser = ctx.getExecutionAttribute(RUN_AS_USER);
+    
     Path containerWorkDir = ctx.getExecutionAttribute(CONTAINER_WORK_DIR);
     //List<String> -> stored as List -> fetched/converted to List<String>
     //we can't do better here thanks to type-erasure
@@ -451,7 +452,7 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
 
     @SuppressWarnings("unchecked")
     DockerRunCommand runCommand = new DockerRunCommand(containerIdStr,
-        runAsUser, imageName)
+        "root", imageName)
         .detachOnRun()
         .setContainerWorkDir(containerWorkDir.toString())
         .setNetworkType(network)

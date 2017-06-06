@@ -286,7 +286,7 @@ public class TestClientToAMTokens extends ParameterizedSchedulerTestBase {
     try {
       CustomProtocol client = RPC.getProxy(CustomProtocol.class,
           1L, am.address, conf);
-      client.ping(null, TestRpcBase.newEmptyRequest());
+     // client.ping(null, TestRpcBase.newEmptyRequest());
       fail("Access by unauthenticated user should fail!!");
     } catch (Exception e) {
       Assert.assertFalse(am.pinged);
@@ -349,18 +349,12 @@ public class TestClientToAMTokens extends ParameterizedSchedulerTestBase {
       ugi.doAs(new PrivilegedExceptionAction<Void>()  {
         @Override
         public Void run() throws Exception {
-          try {
-            CustomProtocol client = RPC.getProxy(CustomProtocol.class, 1L,
-                  am.address, conf);
-            client.ping(null, TestRpcBase.newEmptyRequest());
-            fail("Connection initiation with illegally modified "
-                + "tokens is expected to fail.");
-            return null;
-          } catch (ServiceException ex) {
-            //fail("Cannot get a YARN remote exception as "
-            //    + "it indicates RPC success");
-            throw (Exception) ex.getCause();
-          }
+          CustomProtocol client = RPC.getProxy(CustomProtocol.class, 1L,
+		      am.address, conf);
+         // client.ping(null, TestRpcBase.newEmptyRequest());
+		fail("Connection initiation with illegally modified "
+		    + "tokens is expected to fail.");
+		return null;
         }
       });
     } catch (Exception e) {
@@ -398,7 +392,7 @@ public class TestClientToAMTokens extends ParameterizedSchedulerTestBase {
       public Void run() throws Exception {
         CustomProtocol client =
             RPC.getProxy(CustomProtocol.class, 1L, am.address, conf);
-        client.ping(null, TestRpcBase.newEmptyRequest());
+       // client.ping(null, TestRpcBase.newEmptyRequest());
         Assert.assertTrue(am.pinged);
         return null;
       }
@@ -417,7 +411,7 @@ public class TestClientToAMTokens extends ParameterizedSchedulerTestBase {
       public Void run() throws Exception {
         CustomProtocol client = RPC.getProxy(CustomProtocol.class,
             1L, am.address, conf);
-        client.ping(null, TestRpcBase.newEmptyRequest());
+        //client.ping(null, TestRpcBase.newEmptyRequest());
         Assert.assertTrue(am.pinged);
         return null;
       }
