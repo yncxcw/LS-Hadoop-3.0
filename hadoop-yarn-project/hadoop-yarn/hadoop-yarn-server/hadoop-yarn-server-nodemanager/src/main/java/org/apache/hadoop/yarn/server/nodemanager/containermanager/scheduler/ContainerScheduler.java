@@ -230,6 +230,7 @@ public class ContainerScheduler extends AbstractService implements
 
   @VisibleForTesting
   protected void scheduleContainer(Container container) {
+    //not supported opportunistic contaienrs
     if (maxOppQueueLength <= 0) {
       startAllocatedContainer(container);
       return;
@@ -238,6 +239,7 @@ public class ContainerScheduler extends AbstractService implements
         queuedOpportunisticContainers.isEmpty() &&
         this.utilizationTracker.hasResourcesAvailable(container)) {
       startAllocatedContainer(container);
+      LOG.info("enough resource, launch container "+container.getContainerId()+" type: "+container.getContainerTokenIdentifier().getExecutionType());
     } else {
       LOG.info("No available resources for container {} to start its execution "
           + "immediately.", container.getContainerId());

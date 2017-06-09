@@ -235,12 +235,14 @@ public class OpportunisticContainerAllocatorAMService
         appAttempt.getOpportunisticContainerContext();
     oppCtx.updateNodeList(getLeastLoadedNodes());
 
+    
     List<Container> oppContainers =
         oppContainerAllocator.allocateContainers(
             request.getResourceBlacklistRequest(),
             partitionedAsks.getOpportunistic(), appAttemptId, oppCtx,
             ResourceManager.getClusterTimeStamp(), appAttempt.getUser());
 
+    LOG.info("allcoate opp containers for "+appAttemptId+" opp size: "+oppContainers.size());;
     // Create RMContainers and update the NMTokens.
     if (!oppContainers.isEmpty()) {
       handleNewContainers(oppContainers, false);
