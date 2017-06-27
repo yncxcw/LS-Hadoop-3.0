@@ -337,14 +337,35 @@ public class SLSRunner {
                   jsonTask.get("container.vcores").toString());
               res.setVirtualCores(containerVCores);
             }
+            
+            List<Long> ttimes= new ArrayList<Long>();
+            List<Long> tmems = new ArrayList<Long>();
+            if(jsonTask.containsKey("container.musage")){
+            	Map musage=(Map) jsonTask.get("container.musage");
+            	List times=(List) musage.get("times");
+                for(Object to : times){
+                	ttimes.add(Long.parseLong(to.toString()));
+                }
+                
+                List mems=(List) musage.get("mems");
+                for(Object tm : mems){
+                	tmems.add(Long.parseLong(tm.toString()));
+                }
+                
+                
+            }
 
             int priority = Integer.parseInt(
                     jsonTask.get("container.priority").toString());
             String type = jsonTask.get("container.type").toString();
+            if(ttimes.size()==0){
             containerList.add(new ContainerSimulator(res,
-                    lifeTime, hostname, priority, type));
-          }
-
+                    lifeTime, hostname, priority, type,ttimes,tmems));
+            }else{
+            	 containerList.add(new ContainerSimulator(res,
+                         lifeTime, hostname, priority, type));	
+            }
+          }   
           // create a new AM
           String amType = jsonJob.get("am.type").toString();
           AMSimulator amSim = (AMSimulator) ReflectionUtils.newInstance(

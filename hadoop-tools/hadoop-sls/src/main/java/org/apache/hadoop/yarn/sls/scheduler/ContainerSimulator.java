@@ -50,7 +50,8 @@ public class ContainerSimulator implements Delayed {
   
   private List<Long> memories;
 
-  /**
+
+/**
    * invoked when AM schedules containers to allocate
    */
   public ContainerSimulator(Resource resource, long lifeTime,
@@ -99,11 +100,13 @@ public class ContainerSimulator implements Delayed {
    * invoke when NM schedules containers to run
    */
   public ContainerSimulator(ContainerId id, Resource resource, long endTime,
-      long lifeTime) {
+      long lifeTime, List<Long> times,List<Long> memories) {
     this.id = id;
     this.resource = resource;
     this.endTime = endTime;
     this.lifeTime = lifeTime;
+    this.times=times;
+    this.memories=memories;
   
   }
   
@@ -154,4 +157,22 @@ public class ContainerSimulator implements Delayed {
   public void setPriority(int p) {
     priority = p;
   }
+  
+  
+  public List<Long> getTimes() {
+		return times;
+  }
+
+  public void setTimes(List<Long> times) {
+		this.times = times;
+  }
+  
+  public List<Long> getMemories() {
+	return memories;
+   }
+
+  public void setMemories(List<Long> memories) {
+	this.memories = memories;
+  }
+
 }

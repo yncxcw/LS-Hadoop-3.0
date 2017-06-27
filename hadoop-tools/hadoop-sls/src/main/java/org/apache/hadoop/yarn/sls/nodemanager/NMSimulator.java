@@ -238,14 +238,14 @@ public class NMSimulator extends TaskRunner.Task {
   /**
    * launch a new container with the given life time
    */
-  public void addNewContainer(Container container, long lifeTimeMS) {
+  public void addNewContainer(Container container, long lifeTimeMS,List<Long> times,List<Long> memories) {
     LOG.debug(MessageFormat.format("NodeManager {0} launches a new " +
             "container ({1}).", node.getNodeID(), container.getId()));
     if (lifeTimeMS != -1) {
       // normal container
       ContainerSimulator cs = new ContainerSimulator(container.getId(),
               container.getResource(), lifeTimeMS + System.currentTimeMillis(),
-              lifeTimeMS);
+              lifeTimeMS,times,memories);
       containerQueue.add(cs);
       runningContainers.put(cs.getId(), cs);
     } else {
