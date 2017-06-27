@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.yarn.sls.scheduler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +45,10 @@ public class ContainerSimulator implements Delayed {
   private int priority;
   // type 
   private String type;
+  //mapped memory usage by sorted by time
+  private List<Long> times;
+  
+  private List<Long> memories;
 
   /**
    * invoked when AM schedules containers to allocate
@@ -54,8 +60,41 @@ public class ContainerSimulator implements Delayed {
     this.hostname = hostname;
     this.priority = priority;
     this.type = type;
+    this.times=new ArrayList<Long>();
+    this.times.add(lifeTime);
+    this.memories=new ArrayList<Long>();
+    this.memories.add(resource.getMemorySize());
+    
+    
   }
-
+  
+  /**
+   * invoked when AM schedules containers to allocate
+   */
+  public ContainerSimulator(Resource resource, long lifeTime,
+	      String hostname, int priority, String type,
+	      List<Long> times,List<Long> memories){
+	 this(resource,lifeTime,hostname,priority,type);
+	 this.times=times;
+	 this.memories=memories;
+	 
+	 
+  }
+  
+  public long pullCurrentMemoryUsuage(long time){
+	  
+	  long runTime=time-(endTime-lifeTime);
+	  int index=0;
+	  for(;index<times.size();index++){
+		  if(time<times.get(index)){
+			  break;
+		  }
+	  }
+	  
+	  return memories.get(index);
+  }
+  
+  
   /**
    * invoke when NM schedules containers to run
    */
@@ -65,6 +104,7 @@ public class ContainerSimulator implements Delayed {
     this.resource = resource;
     this.endTime = endTime;
     this.lifeTime = lifeTime;
+  
   }
   
   public Resource getResource() {

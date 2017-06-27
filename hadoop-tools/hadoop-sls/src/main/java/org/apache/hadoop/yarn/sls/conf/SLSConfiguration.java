@@ -30,6 +30,11 @@ public class SLSConfiguration {
   public static final String RUNNER_PREFIX = PREFIX + "runner.";
   public static final String RUNNER_POOL_SIZE = RUNNER_PREFIX + "pool.size";
   public static final int RUNNER_POOL_SIZE_DEFAULT = 10;
+  public static final String RUNNER_MAX_TIME  = RUNNER_PREFIX+"max.time";
+  public static final int RUNNER_MAX_TIME_DEFAULT=3600000;
+  
+  public static final String RUNNER_IS_TRACKED= RUNNER_PREFIX+"jobs.tracked";
+  public static final boolean RUNNER_IS_TRACKED_DEFAULT=false;
   // scheduler
   public static final String SCHEDULER_PREFIX = PREFIX + "scheduler.";
   public static final String RM_SCHEDULER = SCHEDULER_PREFIX + "class";

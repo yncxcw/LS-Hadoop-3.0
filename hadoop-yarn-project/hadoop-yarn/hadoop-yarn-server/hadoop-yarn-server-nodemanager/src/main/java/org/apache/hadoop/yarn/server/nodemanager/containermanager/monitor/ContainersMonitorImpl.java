@@ -602,10 +602,13 @@ public class ContainersMonitorImpl extends AbstractService implements
                 containerId, containerMetricsPeriodMs,
                 containerMetricsUnregisterDelayMs).recordMemoryUsage(
                 (int) (currentPmemUsage >> 20));
+        
+        LOG.info("container: "+containerId+" pm  "+ (int) (currentPmemUsage >> 20));
         ContainerMetrics.forContainer(
                 containerId, containerMetricsPeriodMs,
                 containerMetricsUnregisterDelayMs).recordCpuUsage((int)
                 cpuUsagePercentPerCore, milliVcoresUsed);
+        LOG.info("container: "+containerId+" cpu "+cpuUsagePercentPerCore);
       }
     }
 

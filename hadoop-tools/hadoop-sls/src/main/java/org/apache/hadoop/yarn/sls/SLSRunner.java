@@ -98,9 +98,11 @@ public class SLSRunner {
 
   // other simulation information
   private int numNMs, numRacks, numAMs, numTasks;
+  //max simulation time, kill the running jobs for unfinished jobs
   private long maxRuntime;
   public final static Map<String, Object> simulateInfoMap =
           new HashMap<String, Object>();
+  private boolean isTrackedAll;
 
   // logger
   public final static Logger LOG = Logger.getLogger(SLSRunner.class);
@@ -130,6 +132,11 @@ public class SLSRunner {
     // runner
     int poolSize = conf.getInt(SLSConfiguration.RUNNER_POOL_SIZE, 
                                 SLSConfiguration.RUNNER_POOL_SIZE_DEFAULT); 
+    maxRuntime   = conf.getInt(SLSConfiguration.RUNNER_MAX_TIME, 
+    		                    SLSConfiguration.RUNNER_MAX_TIME_DEFAULT);
+    isTrackedAll    = conf.getBoolean(SLSConfiguration.RUNNER_IS_TRACKED,  
+    		                    SLSConfiguration.RUNNER_IS_TRACKED_DEFAULT);
+    
     SLSRunner.runner.setQueueSize(poolSize);
     // <AMType, Class> map
     for (Map.Entry e : conf) {
@@ -290,15 +297,13 @@ public class SLSRunner {
           // load job information
           long jobStartTime = Long.parseLong(
                   jsonJob.get("job.start.ms").toString());
-          long jobFinishTime = Long.parseLong(
-                  jsonJob.get("job.end.ms").toString());
-
           String user = (String) jsonJob.get("job.user");
           if (user == null)  user = "default";
           String queue = jsonJob.get("job.queue.name").toString();
 
           String oldAppId = jsonJob.get("job.id").toString();
-          boolean isTracked = trackedApps.contains(oldAppId);
+          //configuration to indicate if traced for all jobs
+          boolean isTracked=isTrackedAll ? true:trackedApps.contains(oldAppId);
           int queueSize = queueAppNumMap.containsKey(queue) ?
                   queueAppNumMap.get(queue) : 0;
           queueSize ++;
@@ -346,10 +351,10 @@ public class SLSRunner {
                   amClassMap.get(amType), new Configuration());
           if (amSim != null) {
             amSim.init(AM_ID++, heartbeatInterval, containerList, rm,
-                    this, jobStartTime, jobFinishTime, user, queue,
+                    this, jobStartTime, maxRuntime, user, queue,
                     isTracked, oldAppId);
             runner.schedule(amSim);
-            maxRuntime = Math.max(maxRuntime, jobFinishTime);
+            
             numTasks += containerList.size();
             amMap.put(oldAppId, amSim);
           }
@@ -384,19 +389,18 @@ public class SLSRunner {
           String jobQueue = job.getQueue().getValue();
           String oldJobId = job.getJobID().toString();
           long jobStartTimeMS = job.getSubmitTime();
-          long jobFinishTimeMS = job.getFinishTime();
           if (baselineTimeMS == 0) {
             baselineTimeMS = jobStartTimeMS;
           }
           jobStartTimeMS -= baselineTimeMS;
-          jobFinishTimeMS -= baselineTimeMS;
           if (jobStartTimeMS < 0) {
             LOG.warn("Warning: reset job " + oldJobId + " start time to 0.");
-            jobFinishTimeMS = jobFinishTimeMS - jobStartTimeMS;
+            
             jobStartTimeMS = 0;
           }
 
-          boolean isTracked = trackedApps.contains(oldJobId);
+          //configuration to indicate if traced for all jobs
+          boolean isTracked=isTrackedAll ? true:trackedApps.contains(oldJobId);
           int queueSize = queueAppNumMap.containsKey(jobQueue) ?
                   queueAppNumMap.get(jobQueue) : 0;
           queueSize ++;
@@ -437,10 +441,9 @@ public class SLSRunner {
                   amClassMap.get(jobType), conf);
           if (amSim != null) {
             amSim.init(AM_ID ++, heartbeatInterval, containerList,
-                    rm, this, jobStartTimeMS, jobFinishTimeMS, user, jobQueue,
+                    rm, this, jobStartTimeMS, maxRuntime, user, jobQueue,
                     isTracked, oldJobId);
             runner.schedule(amSim);
-            maxRuntime = Math.max(maxRuntime, jobFinishTimeMS);
             numTasks += containerList.size();
             amMap.put(oldJobId, amSim);
           }

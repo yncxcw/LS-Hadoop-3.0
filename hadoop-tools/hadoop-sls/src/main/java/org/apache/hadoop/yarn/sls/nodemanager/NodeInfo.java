@@ -63,6 +63,7 @@ public class NodeInfo {
     private String rackName;
     private String healthReport;
     private NodeState state;
+    
     private List<ContainerId> toCleanUpContainers;
     private List<ApplicationId> toCleanUpApplications;
     private List<ApplicationId> runningApplications;
@@ -202,7 +203,7 @@ public class NodeInfo {
 
     @Override
     public ResourceUtilization getNodeUtilization() {
-      return null;
+      return this.nodeUtilization;
     }
 
     @Override

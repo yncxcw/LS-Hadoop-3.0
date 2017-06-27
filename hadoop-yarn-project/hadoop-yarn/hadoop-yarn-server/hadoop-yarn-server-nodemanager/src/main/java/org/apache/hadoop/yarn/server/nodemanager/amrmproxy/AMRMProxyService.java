@@ -204,10 +204,13 @@ public class AMRMProxyService extends AbstractService implements
   @Override
   public AllocateResponse allocate(AllocateRequest request)
       throws YarnException, IOException {
+	
     AMRMTokenIdentifier amrmTokenIdentifier =
         YarnServerSecurityUtils.authorizeRequest();
+    LOG.info("receive request from AMRMProxy for "+amrmTokenIdentifier.getApplicationAttemptId());
     RequestInterceptorChainWrapper pipeline =
         getInterceptorChain(amrmTokenIdentifier);
+    
     AllocateResponse allocateResponse =
         pipeline.getRootInterceptor().allocate(request);
 
@@ -228,6 +231,7 @@ public class AMRMProxyService extends AbstractService implements
       throws IOException, YarnException {
     LOG.info("Callback received for initializing request "
         + "processing pipeline for an AM");
+    
     ContainerTokenIdentifier containerTokenIdentifierForKey =
         BuilderUtils.newContainerTokenIdentifier(request
             .getContainerToken());
@@ -463,12 +467,14 @@ public class AMRMProxyService extends AbstractService implements
     String configuredInterceptorClassNames =
         conf.get(
             YarnConfiguration.AMRM_PROXY_INTERCEPTOR_CLASS_PIPELINE,
-            YarnConfiguration.DEFAULT_AMRM_PROXY_INTERCEPTOR_CLASS_PIPELINE);
+            YarnConfiguration.DEFAULT_AMRM_PROXY_INTERCEPTOR_CLASS_PIPELINE
+         );
 
     List<String> interceptorClassNames = new ArrayList<String>();
     Collection<String> tempList =
         StringUtils.getStringCollection(configuredInterceptorClassNames);
     for (String item : tempList) {
+      LOG.info("intercept pipline: "+item);
       interceptorClassNames.add(item.trim());
     }
 
@@ -477,6 +483,7 @@ public class AMRMProxyService extends AbstractService implements
       interceptorClassNames.add(0, DistributedScheduler.class.getName());
     }
 
+    LOG.info("intercept pipeline size: "+interceptorClassNames.size());
     return interceptorClassNames;
   }
 

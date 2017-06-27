@@ -36,6 +36,7 @@ import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NodeHeartbeatRequest;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NodeHeartbeatResponse;
@@ -70,6 +71,8 @@ public class NMSimulator extends TaskRunner.Task {
   private DelayQueue<ContainerSimulator> containerQueue;
   private Map<ContainerId, ContainerSimulator> runningContainers;
   private List<ContainerId> amContainerList;
+//to bookkeeping current used physical memory
+  private ResourceUtilization nodeUtilization;
   // resource manager
   private ResourceManager rm;
   // heart beat response id
@@ -85,6 +88,7 @@ public class NMSimulator extends TaskRunner.Task {
     String rackHostName[] = SLSUtils.getRackHostName(nodeIdStr);
     this.node = NodeInfo.newNodeInfo(rackHostName[0], rackHostName[1], 
                   BuilderUtils.newResource(memory, cores));
+    
     this.rm = rm;
     // init data structures
     completedContainerList =
@@ -124,6 +128,14 @@ public class NMSimulator extends TaskRunner.Task {
                 cs.getId()));
       }
     }
+    //update node memory usage
+    long nodeUsedMemory=0;
+    for(ContainerSimulator container:runningContainers.values()){
+    	  nodeUsedMemory+=container.pullCurrentMemoryUsuage(System.currentTimeMillis());
+    	 
+    }
+    //TODO add set virtual memory support
+    nodeUtilization.setPhysicalMemory((int)nodeUsedMemory);
     
     // send heart beat
     NodeHeartbeatRequest beatRequest =

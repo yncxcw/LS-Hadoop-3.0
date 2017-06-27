@@ -235,11 +235,12 @@ public final class DistributedScheduler extends AbstractRequestInterceptor {
 
     // Prepare request for sending to RM for scheduling GUARANTEED containers.
     request.setAllocatedContainers(allocatedContainers);
+    LOG.info(applicationAttemptId+"allocated OPP containers: "+allocatedContainers.size());
     request.getAllocateRequest().setAskList(partitionedAsks.getGuaranteed());
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Forwarding allocate request to the" +
-          "Distributed Scheduler Service on YARN RM");
+    {
+     LOG.info(applicationAttemptId+"Forwarding allocate GUARANTEE request to the" +
+          "YARN RM size: "+partitionedAsks.getGuaranteed().size());
     }
 
     DistributedSchedulingAllocateResponse dsResp =
