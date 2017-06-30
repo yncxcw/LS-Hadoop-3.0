@@ -49,6 +49,8 @@ import org.apache.hadoop.tools.rumen.LoggedJob;
 import org.apache.hadoop.tools.rumen.LoggedTask;
 import org.apache.hadoop.tools.rumen.LoggedTaskAttempt;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
+import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.NodeState;
 import org.apache.hadoop.yarn.api.records.Resource;
@@ -354,16 +356,34 @@ public class SLSRunner {
                 
                 
             }
+            
+            ExecutionTypeRequest exeType;
+            //request type(e.g., guaranteed or opportunisitc)
+            if(jsonTask.containsKey("container.exetype")){
+            	String exeTypeStr=jsonTask.get("container.exetype").toString();
+            	if(exeTypeStr.equals("guaranteed")){
+            		exeType=ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED);
+            	 	
+            	}else if(exeTypeStr.equals("opportunistic")){
+            		exeType=ExecutionTypeRequest.newInstance(ExecutionType.OPPORTUNISTIC);
+            	}else{
+            		exeType=ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED);	
+            	}
+            	
+            }else{
+            	exeType=ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED);	
+            }
 
+            LOG.info("newly added container exetype "+exeType.toString());
             int priority = Integer.parseInt(
                     jsonTask.get("container.priority").toString());
             String type = jsonTask.get("container.type").toString();
             if(ttimes.size()==0){
             containerList.add(new ContainerSimulator(res,
-                    lifeTime, hostname, priority, type,ttimes,tmems));
+                    lifeTime, hostname, priority, type,exeType,ttimes,tmems));
             }else{
             	 containerList.add(new ContainerSimulator(res,
-                         lifeTime, hostname, priority, type));	
+                         lifeTime, hostname, priority, type, exeType));	
             }
           }   
           // create a new AM
@@ -440,7 +460,7 @@ public class SLSRunner {
             long containerLifeTime = taskAttempt.getFinishTime()
                     - taskAttempt.getStartTime();
             containerList.add(new ContainerSimulator(containerResource,
-                    containerLifeTime, hostname, 10, "map"));
+                    containerLifeTime, hostname, 10, "map",ExecutionTypeRequest.newInstance()));
           }
 
           // reduce tasks
@@ -454,7 +474,7 @@ public class SLSRunner {
             long containerLifeTime = taskAttempt.getFinishTime()
                     - taskAttempt.getStartTime();
             containerList.add(new ContainerSimulator(containerResource,
-                    containerLifeTime, hostname, 20, "reduce"));
+                    containerLifeTime, hostname, 20, "reduce",ExecutionTypeRequest.newInstance()));
           }
 
           // create a new AM

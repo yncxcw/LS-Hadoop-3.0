@@ -37,6 +37,9 @@ import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
+import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
+import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
@@ -44,6 +47,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
 
 import org.apache.hadoop.yarn.sls.scheduler.ContainerSimulator;
+import org.apache.hadoop.yarn.sls.utils.SLSUtils;
 import org.apache.hadoop.yarn.sls.SLSRunner;
 import org.apache.log4j.Logger;
 
@@ -160,7 +164,7 @@ public class MRAMSimulator extends AMSimulator {
     ResourceRequest amRequest = createResourceRequest(
             BuilderUtils.newResource(MR_AM_CONTAINER_RESOURCE_MEMORY_MB,
                     MR_AM_CONTAINER_RESOURCE_VCORES),
-            ResourceRequest.ANY, 1, 1);
+            ResourceRequest.ANY, 1, ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED), 1);
     ask.add(amRequest);
     LOG.debug(MessageFormat.format("Application {0} sends out allocate " +
             "request for its AM", appId));
@@ -184,6 +188,30 @@ public class MRAMSimulator extends AMSimulator {
     }
   }
 
+  
+  protected ContainerSimulator matchAllocatedContainers(
+		   List<ContainerSimulator> schedList, Container container){
+	//first round, try to match both resource and locality
+	NodeId rnode=container.getNodeId(); 
+	LOG.info("match node id: "+rnode.getHost());
+	for(int i=0;i<schedList.size();i++){
+		 String rackHostNames[] = SLSUtils.getRackHostName(schedList.get(i).getHostname());
+	     String hostName=rackHostNames[1];
+	     if(rnode.getHost().equals(hostName) && 
+	    		 container.getResource().equals(schedList.get(i).getResource())){
+	    	 return schedList.remove(i);
+	     }
+	} 
+	//second round try resoruce.
+	for(int i=0;i<schedList.size();i++){
+	    if(container.getResource().equals(schedList.get(i).getResource())){
+	    	return schedList.remove(i);
+	    }
+	}
+    //no match give up this container	  
+	return null;  
+  }
+  
   @Override
   @SuppressWarnings("unchecked")
   protected void processResponseQueue()
@@ -197,7 +225,7 @@ public class MRAMSimulator extends AMSimulator {
           // Get AM container
           Container container = response.getAllocatedContainers().get(0);
           se.getNmMap().get(container.getNodeId())
-              .addNewContainer(container, -1L);
+              .addNewContainer(container, -1L,ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED),null,null);
           // Start AM container
           amContainer = container;
           LOG.debug(MessageFormat.format("Application {0} starts its " +
@@ -270,21 +298,27 @@ public class MRAMSimulator extends AMSimulator {
       // check allocated containers
       for (Container container : response.getAllocatedContainers()) {
         if (! scheduledMaps.isEmpty()) {
-          ContainerSimulator cs = scheduledMaps.remove();
+          ContainerSimulator cs = matchAllocatedContainers(scheduledMaps,container);
+          if(cs==null){
+        	  LOG.warn("allcoated resource could not find a match");;
+          }
           LOG.debug(MessageFormat.format("Application {0} starts a " +
                   "launch a mapper ({1}).", appId, container.getId()));
           assignedMaps.put(container.getId(), cs);
           se.getNmMap().get(container.getNodeId())
                   .addNewContainer(container, cs.getLifeTime(),
-                		   cs.getTimes(),cs.getMemories());
+                		   cs.getExeType(),cs.getTimes(),cs.getMemories());
         } else if (! this.scheduledReduces.isEmpty()) {
-          ContainerSimulator cs = scheduledReduces.remove();
+          ContainerSimulator cs = matchAllocatedContainers(scheduledReduces,container);
+          if(cs==null){
+        	  LOG.warn("allcoated resource could not find a match");;
+          }
           LOG.debug(MessageFormat.format("Application {0} starts a " +
                   "launch a reducer ({1}).", appId, container.getId()));
           assignedReduces.put(container.getId(), cs);
           se.getNmMap().get(container.getNodeId())
                   .addNewContainer(container, cs.getLifeTime(),
-                		 cs.getTimes(),cs.getMemories());
+                		 cs.getExeType(), cs.getTimes(),cs.getMemories());
         }
       }
     }

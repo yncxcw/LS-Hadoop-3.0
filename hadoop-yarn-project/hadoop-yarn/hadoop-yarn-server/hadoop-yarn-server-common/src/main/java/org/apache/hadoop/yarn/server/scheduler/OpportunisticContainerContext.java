@@ -127,7 +127,8 @@ public class OpportunisticContainerContext {
 
       // TODO: Extend for Node/Rack locality. We only handle ANY requests now
       if (!ResourceRequest.isAnyLocation(request.getResourceName())) {
-        continue;
+         
+    	 continue;
       }
 
       if (request.getNumContainers() == 0) {

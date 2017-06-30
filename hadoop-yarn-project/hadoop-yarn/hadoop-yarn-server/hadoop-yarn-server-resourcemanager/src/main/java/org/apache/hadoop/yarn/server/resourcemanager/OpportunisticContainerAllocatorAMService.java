@@ -230,11 +230,18 @@ public class OpportunisticContainerAllocatorAMService
     SchedulerApplicationAttempt appAttempt =
         ((AbstractYarnScheduler)rmContext.getScheduler())
             .getApplicationAttempt(appAttemptId);
-
+    if(partitionedAsks.getOpportunistic().size() > 0){
+      LOG.info("app "+appAttemptId+"opp request size: "+partitionedAsks.getOpportunistic().size());
+    }
+    
+    if(partitionedAsks.getGuaranteed().size() > 0){
+      LOG.info("app "+appAttemptId+"gua request size: "+partitionedAsks.getGuaranteed().size());
+    }
     OpportunisticContainerContext oppCtx =
         appAttempt.getOpportunisticContainerContext();
     oppCtx.updateNodeList(getLeastLoadedNodes());
 
+    
     
     List<Container> oppContainers =
         oppContainerAllocator.allocateContainers(
@@ -243,6 +250,7 @@ public class OpportunisticContainerAllocatorAMService
             ResourceManager.getClusterTimeStamp(), appAttempt.getUser());
 
     LOG.info("allcoate opp containers for "+appAttemptId+" opp size: "+oppContainers.size());;
+    
     // Create RMContainers and update the NMTokens.
     if (!oppContainers.isEmpty()) {
       handleNewContainers(oppContainers, false);
@@ -381,6 +389,7 @@ public class OpportunisticContainerAllocatorAMService
         lastCacheUpdateTime = currTime;
       }
     }
+    
     return cachedNodes;
   }
 

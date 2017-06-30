@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
+import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
 import org.apache.hadoop.yarn.api.records.Resource;
 
 @Private
@@ -49,18 +51,21 @@ public class ContainerSimulator implements Delayed {
   private List<Long> times;
   
   private List<Long> memories;
+  
+  private ExecutionTypeRequest exeType;
 
 
 /**
    * invoked when AM schedules containers to allocate
    */
   public ContainerSimulator(Resource resource, long lifeTime,
-      String hostname, int priority, String type) {
+      String hostname, int priority, String type, ExecutionTypeRequest exeType) {
     this.resource = resource;
     this.lifeTime = lifeTime;
     this.hostname = hostname;
     this.priority = priority;
     this.type = type;
+    this.exeType=exeType;
     this.times=new ArrayList<Long>();
     this.times.add(lifeTime);
     this.memories=new ArrayList<Long>();
@@ -74,8 +79,9 @@ public class ContainerSimulator implements Delayed {
    */
   public ContainerSimulator(Resource resource, long lifeTime,
 	      String hostname, int priority, String type,
+	      ExecutionTypeRequest exeType,
 	      List<Long> times,List<Long> memories){
-	 this(resource,lifeTime,hostname,priority,type);
+	 this(resource,lifeTime,hostname,priority,type,exeType);
 	 this.times=times;
 	 this.memories=memories;
 	 
@@ -84,10 +90,19 @@ public class ContainerSimulator implements Delayed {
   
   public long pullCurrentMemoryUsuage(long time){
 	  
+	  if(times == null || memories == null){
+		  
+		  return 0;
+	  }
+	  
+	  if(times.size() ==0 || memories.size() == 0){
+		  return 0;
+	  }
+	  
 	  long runTime=time-(endTime-lifeTime);
 	  int index=0;
 	  for(;index<times.size();index++){
-		  if(time<times.get(index)){
+		  if(runTime<times.get(index)){
 			  break;
 		  }
 	  }
@@ -100,13 +115,14 @@ public class ContainerSimulator implements Delayed {
    * invoke when NM schedules containers to run
    */
   public ContainerSimulator(ContainerId id, Resource resource, long endTime,
-      long lifeTime, List<Long> times,List<Long> memories) {
+      long lifeTime, ExecutionTypeRequest exeType,List<Long> times,List<Long> memories) {
     this.id = id;
     this.resource = resource;
     this.endTime = endTime;
     this.lifeTime = lifeTime;
     this.times=times;
     this.memories=memories;
+    this.exeType=exeType;
   
   }
   
@@ -175,4 +191,12 @@ public class ContainerSimulator implements Delayed {
 	this.memories = memories;
   }
 
+  public ExecutionTypeRequest getExeType() {
+		return exeType;
+  }
+
+  public void setExeType(ExecutionTypeRequest exeType) {
+		this.exeType = exeType;
+  }
+  
 }

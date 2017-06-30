@@ -36,6 +36,7 @@ import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NodeHeartbeatRequest;
@@ -48,6 +49,7 @@ import org.apache.hadoop.yarn.server.api.records.MasterKey;
 import org.apache.hadoop.yarn.server.api.records.NodeAction;
 import org.apache.hadoop.yarn.server.api.records.NodeHealthStatus;
 import org.apache.hadoop.yarn.server.api.records.NodeStatus;
+import org.apache.hadoop.yarn.server.api.records.OpportunisticContainersStatus;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.hadoop.yarn.server.resourcemanager.rmnode.RMNode;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
@@ -71,8 +73,10 @@ public class NMSimulator extends TaskRunner.Task {
   private DelayQueue<ContainerSimulator> containerQueue;
   private Map<ContainerId, ContainerSimulator> runningContainers;
   private List<ContainerId> amContainerList;
-//to bookkeeping current used physical memory
+  //to bookkeeping current used physical memory
   private ResourceUtilization nodeUtilization;
+  //opportunistic containers support
+  private OpportunisticContainersStatus opportunisticContainersStatus;
   // resource manager
   private ResourceManager rm;
   // heart beat response id
@@ -109,6 +113,16 @@ public class NMSimulator extends TaskRunner.Task {
     RegisterNodeManagerResponse response = rm.getResourceTrackerService()
             .registerNodeManager(req);
     masterKey = response.getNMTokenMasterKey();
+    
+    nodeUtilization=ResourceUtilization.newInstance(0, 0, 0);
+    //initialized opp status
+    opportunisticContainersStatus=OpportunisticContainersStatus.newInstance();
+    opportunisticContainersStatus.setEstimatedQueueWaitTime(0);
+    opportunisticContainersStatus.setOpportCoresUsed(0);
+    opportunisticContainersStatus.setOpportMemoryUsed(0);
+    opportunisticContainersStatus.setQueuedOpportContainers(0);
+    opportunisticContainersStatus.setRunningOpportContainers(0);
+    opportunisticContainersStatus.setWaitQueueLength(0);
   }
 
   @Override
@@ -135,6 +149,7 @@ public class NMSimulator extends TaskRunner.Task {
     	 
     }
     //TODO add set virtual memory support
+    //LOG.info("node: "+node.getHostName()+" newly pmem "+nodeUsedMemory);
     nodeUtilization.setPhysicalMemory((int)nodeUsedMemory);
     
     // send heart beat
@@ -148,7 +163,9 @@ public class NMSimulator extends TaskRunner.Task {
     ns.setKeepAliveApplications(new ArrayList<ApplicationId>());
     ns.setResponseId(RESPONSE_ID ++);
     ns.setNodeHealthStatus(NodeHealthStatus.newInstance(true, "", 0));
+    ns.setOpportunisticContainersStatus(opportunisticContainersStatus);
     beatRequest.setNodeStatus(ns);
+    
     NodeHeartbeatResponse beatResponse =
         rm.getResourceTrackerService().nodeHeartbeat(beatRequest);
     if (! beatResponse.getContainersToCleanup().isEmpty()) {
@@ -238,14 +255,16 @@ public class NMSimulator extends TaskRunner.Task {
   /**
    * launch a new container with the given life time
    */
-  public void addNewContainer(Container container, long lifeTimeMS,List<Long> times,List<Long> memories) {
+  public void addNewContainer(Container container, long lifeTimeMS,
+		   ExecutionTypeRequest exeType, 
+		  List<Long> times,List<Long> memories) {
     LOG.debug(MessageFormat.format("NodeManager {0} launches a new " +
             "container ({1}).", node.getNodeID(), container.getId()));
     if (lifeTimeMS != -1) {
       // normal container
       ContainerSimulator cs = new ContainerSimulator(container.getId(),
               container.getResource(), lifeTimeMS + System.currentTimeMillis(),
-              lifeTimeMS,times,memories);
+              lifeTimeMS,exeType,times,memories);
       containerQueue.add(cs);
       runningContainers.put(cs.getId(), cs);
     } else {
