@@ -29,6 +29,8 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
 import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.sls.nodemanager.NMSimulator;
+import org.apache.log4j.Logger;
 
 @Private
 @Unstable
@@ -54,6 +56,7 @@ public class ContainerSimulator implements Delayed {
   
   private ExecutionTypeRequest exeType;
 
+  private final static Logger LOG = Logger.getLogger(ContainerSimulator.class);
 
 /**
    * invoked when AM schedules containers to allocate
@@ -92,10 +95,12 @@ public class ContainerSimulator implements Delayed {
 	  
 	  if(times == null || memories == null){
 		  
+		  LOG.info("times null");
 		  return 0;
 	  }
 	  
 	  if(times.size() ==0 || memories.size() == 0){
+		  LOG.info("times 0");
 		  return 0;
 	  }
 	  

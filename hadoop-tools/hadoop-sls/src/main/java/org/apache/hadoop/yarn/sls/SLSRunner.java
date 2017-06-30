@@ -19,9 +19,11 @@ package org.apache.hadoop.yarn.sls;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +36,8 @@ import java.util.Random;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.cli.CommandLine;
@@ -280,10 +284,14 @@ public class SLSRunner {
 
   /**
    * parse workload information from sls trace files
+ * @throws IOException 
+ * @throws JsonProcessingException 
+ * @throws JsonParseException 
+ * @throws Exception 
    */
   @SuppressWarnings("unchecked")
   private void startAMFromSLSTraces(Resource containerResource,
-                                    int heartbeatInterval) throws IOException {
+                                    int heartbeatInterval) throws YarnException, JsonParseException, JsonProcessingException, IOException {
     // parse from sls traces
     JsonFactory jsonF = new JsonFactory();
     ObjectMapper mapper = new ObjectMapper();
@@ -354,6 +362,9 @@ public class SLSRunner {
                 	tmems.add(Long.parseLong(tm.toString()));
                 }
                 
+                if(ttimes != tmems){
+                	throw new YarnException("times size and mems size are mismatched");
+                }
                 
             }
             
@@ -378,7 +389,7 @@ public class SLSRunner {
             int priority = Integer.parseInt(
                     jsonTask.get("container.priority").toString());
             String type = jsonTask.get("container.type").toString();
-            if(ttimes.size()==0){
+            if(ttimes.size()>0){
             containerList.add(new ContainerSimulator(res,
                     lifeTime, hostname, priority, type,exeType,ttimes,tmems));
             }else{

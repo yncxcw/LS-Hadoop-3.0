@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
 
@@ -36,6 +37,7 @@ import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.exceptions.YarnException;
@@ -73,6 +75,10 @@ public class NMSimulator extends TaskRunner.Task {
   private DelayQueue<ContainerSimulator> containerQueue;
   private Map<ContainerId, ContainerSimulator> runningContainers;
   private List<ContainerId> amContainerList;
+  //opportu,queue would be the sub of the below two
+  private List<ContainerId> oppContainerList;
+  private Set<ContainerId> oppContainerRunning;
+  
   //to bookkeeping current used physical memory
   private ResourceUtilization nodeUtilization;
   //opportunistic containers support
@@ -97,6 +103,8 @@ public class NMSimulator extends TaskRunner.Task {
     // init data structures
     completedContainerList =
             Collections.synchronizedList(new ArrayList<ContainerId>());
+    //opp container list
+    oppContainerList=Collections.synchronizedList(new ArrayList<ContainerId>());
     releasedContainerList =
             Collections.synchronizedList(new ArrayList<ContainerId>());
     containerQueue = new DelayQueue<ContainerSimulator>();
@@ -130,6 +138,42 @@ public class NMSimulator extends TaskRunner.Task {
     // do nothing
   }
 
+  
+  public void updateOppStatistics(){
+	  //update oppor status;
+	  int oppWaitTime=0;
+	  int oppCores=0;
+	  int oppMems=0;
+	  int oppQueues=0;
+	  int oppRunnings=0;
+	  int oppQueueopps=0;
+	  for(ContainerId cntId:oppContainerList){
+	    	//this is a running opp container
+	    	if(oppContainerRunning.contains(cntId)){
+	    	  oppCores+=runningContainers.get(cntId).getResource().getVirtualCores();
+	    	  oppMems+=runningContainers.get(cntId).getResource().getMemorySize();
+	    	  oppRunnings+=1;
+	    	//it is still queued
+	    	}else{
+	    	  //queuing opp containers	
+	    	  oppQueueopps+=1;
+	    	  //queueing containers, since we do not queue any guaranteed containers, 
+	    	  //oppWaitQeueu should equal oppQueues
+	    	  oppQueues+=1;
+	    		
+	    	}
+	  }
+	  
+	  //TODO how to estimate this value
+	  this.opportunisticContainersStatus.setEstimatedQueueWaitTime(0);
+	  this.opportunisticContainersStatus.setOpportCoresUsed(oppCores);
+	  this.opportunisticContainersStatus.setOpportMemoryUsed(oppMems);
+	  this.opportunisticContainersStatus.setQueuedOpportContainers(oppQueueopps);
+	  this.opportunisticContainersStatus.setRunningOpportContainers(oppRunnings);
+	  this.opportunisticContainersStatus.setWaitQueueLength(oppQueues);
+	  
+  }
+  
   @Override
   public void middleStep() throws Exception {
     // we check the lifetime for each running containers
@@ -137,6 +181,7 @@ public class NMSimulator extends TaskRunner.Task {
     synchronized(completedContainerList) {
       while ((cs = containerQueue.poll()) != null) {
         runningContainers.remove(cs.getId());
+        oppContainerList.remove(cs.getId());
         completedContainerList.add(cs.getId());
         LOG.debug(MessageFormat.format("Container {0} has completed",
                 cs.getId()));
@@ -145,12 +190,17 @@ public class NMSimulator extends TaskRunner.Task {
     //update node memory usage
     long nodeUsedMemory=0;
     for(ContainerSimulator container:runningContainers.values()){
-    	  nodeUsedMemory+=container.pullCurrentMemoryUsuage(System.currentTimeMillis());
+    	  long containerMemory=container.pullCurrentMemoryUsuage(System.currentTimeMillis());
+    	  nodeUsedMemory+=containerMemory;
+    	  LOG.info("contaienr "+container.getId()+" memory: "+containerMemory);
     	 
     }
     //TODO add set virtual memory support
-    //LOG.info("node: "+node.getHostName()+" newly pmem "+nodeUsedMemory);
+    LOG.info("node: "+node.getHostName()+" newly pmem "+nodeUsedMemory);
     nodeUtilization.setPhysicalMemory((int)nodeUsedMemory);
+    
+    //update opp statistics
+    updateOppStatistics();
     
     // send heart beat
     NodeHeartbeatRequest beatRequest =
@@ -266,6 +316,9 @@ public class NMSimulator extends TaskRunner.Task {
               container.getResource(), lifeTimeMS + System.currentTimeMillis(),
               lifeTimeMS,exeType,times,memories);
       containerQueue.add(cs);
+      if(cs.getExeType().getExecutionType().equals(ExecutionType.OPPORTUNISTIC)){
+    	 oppContainerList.add(cs.getId()) ;
+      }
       runningContainers.put(cs.getId(), cs);
     } else {
       // AM container
