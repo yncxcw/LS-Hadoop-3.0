@@ -118,7 +118,7 @@ public class ContainerScheduler extends AbstractService implements
     this.metrics = metrics;
     this.maxOppQueueLength = (qLength <= 0) ? 0 : qLength;
     this.utilizationTracker =
-        new AllocationBasedResourceUtilizationTracker(this);
+        new AllocationBasedResourceUtilizationTracker(this,context);
     this.opportunisticContainersStatus =
         OpportunisticContainersStatus.newInstance();
   }
@@ -232,6 +232,7 @@ public class ContainerScheduler extends AbstractService implements
   protected void scheduleContainer(Container container) {
     //not supported opportunistic contaienrs
     if (maxOppQueueLength <= 0) {
+      LOG.info("opp contianer is not supported");
       startAllocatedContainer(container);
       return;
     }

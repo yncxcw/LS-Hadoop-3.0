@@ -551,8 +551,8 @@ public class ProcfsBasedProcessTree extends ResourceCalculatorProcessTree {
                 Long.parseLong(m.group(7)), new BigInteger(m.group(8)),
                 Long.parseLong(m.group(10)), Long.parseLong(m.group(11)));
       } else {
-        LOG.warn("Unexpected: procfs stat file is not in the expected format"
-            + " for process with pid " + pinfo.getPid());
+        //LOG.warn("Unexpected: procfs stat file is not in the expected format"
+        //    + " for process with pid " + pinfo.getPid());
         ret = null;
       }
     } catch (IOException io) {

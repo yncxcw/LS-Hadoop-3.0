@@ -23,6 +23,7 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Cont
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainersMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.hadoop.yarn.server.nodemanager.Context;
 
 /**
  * An implementation of the {@link ResourceUtilizationTracker} that equates
@@ -36,10 +37,12 @@ public class AllocationBasedResourceUtilizationTracker implements
 
   private ResourceUtilization containersAllocation;
   private ContainerScheduler scheduler;
+  private final Context context;
 
-  AllocationBasedResourceUtilizationTracker(ContainerScheduler scheduler) {
+  AllocationBasedResourceUtilizationTracker(ContainerScheduler scheduler,Context context) {
     this.containersAllocation = ResourceUtilization.newInstance(0, 0, 0.0f);
     this.scheduler = scheduler;
+    this.context=context;
   }
 
   /**
@@ -57,6 +60,8 @@ public class AllocationBasedResourceUtilizationTracker implements
    */
   @Override
   public void addContainerResources(Container container) {
+	LOG.info("launching new container: "+container.getContainerId()+" new resource: "
+			+this.containersAllocation);
     ContainersMonitor.increaseResourceUtilization(
         getContainersMonitor(), this.containersAllocation,
         container.getResource());
@@ -68,6 +73,8 @@ public class AllocationBasedResourceUtilizationTracker implements
    */
   @Override
   public void subtractContainerResource(Container container) {
+	LOG.info("finish container: "+container.getContainerId()+" new resource: "
+				+this.containersAllocation);  
     ContainersMonitor.decreaseResourceUtilization(
         getContainersMonitor(), this.containersAllocation,
         container.getResource());
@@ -86,8 +93,24 @@ public class AllocationBasedResourceUtilizationTracker implements
         container.getResource().getVirtualCores());
   }
 
+  //what if we only consider realtime physical memory usage
+  private boolean hasResourcesAvailable(long pMemBytes){
+	  
+	  LOG.info("checking resource: "+this.containersAllocation);
+	  if(this.context.getNodeResourceMonitor().getUtilization().getPhysicalMemory()+)
+		  (int) (pMemBytes >> 20) >
+	      (int) (getContainersMonitor()
+	              .getPmemAllocatedForContainers() >> 20)){
+	            	  
+	     return false;         
+	   }else{
+		 return true;  
+	   } 
+	  
+  }
   private boolean hasResourcesAvailable(long pMemBytes, long vMemBytes,
       int cpuVcores) {
+	LOG.info("checking resource: "+this.containersAllocation);  
     // Check physical memory.
     if (LOG.isDebugEnabled()) {
       LOG.debug("pMemCheck [current={} + asked={} > allowed={}]",
@@ -102,6 +125,7 @@ public class AllocationBasedResourceUtilizationTracker implements
       return false;
     }
 
+    
     if (LOG.isDebugEnabled()) {
       LOG.debug("before vMemCheck" +
               "[isEnabled={}, current={} + asked={} > allowed={}]",
