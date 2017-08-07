@@ -99,16 +99,14 @@ public class AllocationBasedResourceUtilizationTracker implements
   private boolean hasResourcesAvailable(long pMemBytes){
 	  
 	  
-	  int hostUsedPMem=this.context.getNodeResourceMonitor().getUtilization().getPhysicalMemory();
-	  int hostLimit=(int) (getContainersMonitor()
-              .getPmemAllocatedForContainers() >> 20);
+	  long hostAvaiPMem=this.context.getNodeResourceMonitor().getAvailableMemory();
 	  
 	  LOG.info("checking allocation: "+this.containersAllocation+" host used: "+
 		" queuing: "+this.scheduler.getNumQueuedContainers()+
 		" running: "+this.scheduler.getRunningContainers());
 	  
 	  
-	  if(hostUsedPMem+(int)(pMemBytes >> 20) > hostLimit){
+	  if(hostAvaiPMem > pMemBytes ){
 	     
 		 LOG.info("resource is not available");
 	     return false;         

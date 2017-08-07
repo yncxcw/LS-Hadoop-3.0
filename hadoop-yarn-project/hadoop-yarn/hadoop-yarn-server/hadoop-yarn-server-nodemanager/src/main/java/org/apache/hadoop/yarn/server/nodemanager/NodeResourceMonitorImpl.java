@@ -48,6 +48,7 @@ public class NodeResourceMonitorImpl extends AbstractService implements
   /** Current <em>resource utilization</em> of the node. */
   private ResourceUtilization nodeUtilization;
 
+  private long nodeAvailableMemory;
   /**
    * Initialize the node resource monitor.
    */
@@ -139,6 +140,10 @@ public class NodeResourceMonitorImpl extends AbstractService implements
         // Get node utilization and save it into the health status
         long pmem = resourceCalculatorPlugin.getPhysicalMemorySize() -
             resourceCalculatorPlugin.getAvailablePhysicalMemorySize();
+        
+        nodeAvailableMemory = 
+        	resourceCalculatorPlugin.getAvailablePhysicalMemorySize();
+        
         long vmem =
             resourceCalculatorPlugin.getVirtualMemorySize()
                 - resourceCalculatorPlugin.getAvailableVirtualMemorySize();
@@ -168,4 +173,18 @@ public class NodeResourceMonitorImpl extends AbstractService implements
   public ResourceUtilization getUtilization() {
     return this.nodeUtilization;
   }
+  
+  @Override
+  public long getAvailableMemory(){
+	 return this.nodeAvailableMemory;  
+  
+  }
+  
+  //will implement in the future
+  @Override 
+  public boolean isNodeOOM(){
+	 return false; 
+  }
+  
+  
 }

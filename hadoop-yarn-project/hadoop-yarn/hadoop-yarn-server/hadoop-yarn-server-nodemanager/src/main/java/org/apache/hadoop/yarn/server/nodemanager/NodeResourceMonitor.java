@@ -30,4 +30,12 @@ public interface NodeResourceMonitor extends Service {
    * @return <em>resource utilization</em> of the node.
    */
   public ResourceUtilization getUtilization();
+  
+  
+  //get available usable memory
+  public long getAvailableMemory();
+  
+  //at this point we should kill user applications
+  public boolean isNodeOOM();
+  
 }
