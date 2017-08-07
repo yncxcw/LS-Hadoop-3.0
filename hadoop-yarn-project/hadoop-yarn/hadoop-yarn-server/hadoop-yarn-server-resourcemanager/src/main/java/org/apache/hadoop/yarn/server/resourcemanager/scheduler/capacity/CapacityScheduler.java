@@ -445,6 +445,7 @@ public class CapacityScheduler extends
     Collection<FiCaSchedulerNode> nodes = cs.nodeTracker.getAllNodes();
     int start = random.nextInt(nodes.size());
 
+    //LOG.info("//**try random scheduling");
     for (FiCaSchedulerNode node : nodes) {
       if (current++ >= start) {
         cs.allocateContainersToNode(node.getNodeID(), false);
@@ -1282,23 +1283,25 @@ public class CapacityScheduler extends
     if (calculator.computeAvailableContainers(Resources
             .add(node.getUnallocatedResource(), node.getTotalKillableResources()),
         minimumAllocation) <= 0) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("This node or this node partition doesn't have available or"
+      {
+        LOG.info("This node or this node partition doesn't have available or"
             + "killable resource");
       }
       return null;
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(
+   
+    if(LOG.isDebugEnabled())
+    LOG.debug(
           "Trying to schedule on node: " + node.getNodeName() + ", available: "
               + node.getUnallocatedResource());
-    }
+    
 
     return allocateOrReserveNewContainers(ps, withNodeHeartbeat);
   }
 
   private CSAssignment allocateOrReserveNewContainers(
+  	  
       PlacementSet<FiCaSchedulerNode> ps, boolean withNodeHeartbeat) {
     CSAssignment assignment = getRootQueue().assignContainers(
         getClusterResource(), ps, new ResourceLimits(labelManager
@@ -1372,6 +1375,7 @@ public class CapacityScheduler extends
   @VisibleForTesting
   CSAssignment allocateContainersToNode(PlacementSet<FiCaSchedulerNode> ps,
       boolean withNodeHeartbeat) {
+	  
     if (rmContext.isWorkPreservingRecoveryEnabled() && !rmContext
         .isSchedulerReadyForAllocatingContainers()) {
       return null;

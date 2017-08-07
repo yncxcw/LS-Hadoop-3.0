@@ -74,7 +74,8 @@ public class AllocationBasedResourceUtilizationTracker implements
   @Override
   public void subtractContainerResource(Container container) {
 	LOG.info("finish container: "+container.getContainerId()+" new resource: "
-				+this.containersAllocation);  
+				+this.containersAllocation); 
+	
     ContainersMonitor.decreaseResourceUtilization(
         getContainersMonitor(), this.containersAllocation,
         container.getResource());
@@ -88,22 +89,31 @@ public class AllocationBasedResourceUtilizationTracker implements
   @Override
   public boolean hasResourcesAvailable(Container container) {
     long pMemBytes = container.getResource().getMemorySize() * 1024 * 1024L;
-    return hasResourcesAvailable(pMemBytes,
-        (long) (getContainersMonitor().getVmemRatio()* pMemBytes),
-        container.getResource().getVirtualCores());
+    //return hasResourcesAvailable(pMemBytes,
+    //     (long) (getContainersMonitor().getVmemRatio()* pMemBytes),
+    //    container.getResource().getVirtualCores());
+    return hasResourcesAvailable(pMemBytes);     
   }
 
   //what if we only consider realtime physical memory usage
   private boolean hasResourcesAvailable(long pMemBytes){
 	  
-	  LOG.info("checking resource: "+this.containersAllocation);
-	  if(this.context.getNodeResourceMonitor().getUtilization().getPhysicalMemory()+)
-		  (int) (pMemBytes >> 20) >
-	      (int) (getContainersMonitor()
-	              .getPmemAllocatedForContainers() >> 20)){
-	            	  
+	  
+	  int hostUsedPMem=this.context.getNodeResourceMonitor().getUtilization().getPhysicalMemory();
+	  int hostLimit=(int) (getContainersMonitor()
+              .getPmemAllocatedForContainers() >> 20);
+	  
+	  LOG.info("checking allocation: "+this.containersAllocation+" host used: "+
+		" queuing: "+this.scheduler.getNumQueuedContainers()+
+		" running: "+this.scheduler.getRunningContainers());
+	  
+	  
+	  if(hostUsedPMem+(int)(pMemBytes >> 20) > hostLimit){
+	     
+		 LOG.info("resource is not available");
 	     return false;         
 	   }else{
+		 LOG.info("resource is available");  
 		 return true;  
 	   } 
 	  

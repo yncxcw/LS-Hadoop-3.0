@@ -455,6 +455,8 @@ public class ParentQueue extends AbstractCSQueue {
   public CSAssignment assignContainers(Resource clusterResource,
       PlacementSet<FiCaSchedulerNode> ps, ResourceLimits resourceLimits,
     SchedulingMode schedulingMode) {
+	    
+	  
     FiCaSchedulerNode node = PlacementSetUtils.getSingleNode(ps);
 
     // if our queue cannot access this node, just return
@@ -503,7 +505,9 @@ public class ParentQueue extends AbstractCSQueue {
     CSAssignment assignment = new CSAssignment(Resources.createResource(0, 0),
         NodeType.NODE_LOCAL);
 
+    
     while (canAssign(clusterResource, node)) {
+  	
       if (LOG.isDebugEnabled()) {
         LOG.debug("Trying to assign containers to child-queue of "
             + getQueueName());

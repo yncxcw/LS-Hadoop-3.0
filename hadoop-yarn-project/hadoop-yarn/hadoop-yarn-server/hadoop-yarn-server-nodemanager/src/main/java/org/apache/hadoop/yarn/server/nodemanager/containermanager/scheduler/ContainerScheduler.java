@@ -158,6 +158,10 @@ public class ContainerScheduler extends AbstractService implements
   public int getNumQueuedGuaranteedContainers() {
     return this.queuedGuaranteedContainers.size();
   }
+  
+  public int getRunningContainers() {
+	return this.runningContainers.size();  
+  }
 
   @VisibleForTesting
   public int getNumQueuedOpportunisticContainers() {
