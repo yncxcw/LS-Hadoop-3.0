@@ -206,7 +206,7 @@ public class ContainerScheduler extends AbstractService implements
     }
   }
 
-  private void startPendingContainers() {
+  public void startPendingContainers() {
     // Start pending guaranteed containers, if resources available.
     boolean resourcesAvailable =
         startContainersFromQueue(queuedGuaranteedContainers.values());
@@ -214,6 +214,19 @@ public class ContainerScheduler extends AbstractService implements
     if (resourcesAvailable) {
       startContainersFromQueue(queuedOpportunisticContainers.values());
     }
+  }
+  
+  //based on the pmem usage, kill opp containers.
+  //return true if decide to kill
+  public boolean tryToKillOppContainers(){
+	int containersToKill=1;  
+	if(this.utilizationTracker.isCommitmentOverThreshold()){
+		RandomPickOppConainersToKill(containersToKill);
+		return true; 
+	}else{
+		
+		return false;
+	}
   }
 
   private boolean startContainersFromQueue(
@@ -310,6 +323,40 @@ public class ContainerScheduler extends AbstractService implements
     container.sendLaunchEvent();
   }
 
+  private void RandomPickOppConainersToKill(int numToKill){
+	  List<Container> extraOpportContainersToKill = new ArrayList<>();
+	  Iterator<Container> lifoIterator = new LinkedList<>(
+		        runningContainers.values()).descendingIterator();
+	  while(lifoIterator.hasNext() && numToKill > 0) {
+		      Container runningCont = lifoIterator.next();
+	    if (runningCont.getContainerTokenIdentifier().getExecutionType() ==
+		          ExecutionType.OPPORTUNISTIC) {
+
+	        if (oppContainersToKill.containsKey(
+		             runningCont.getContainerId())) {
+		          // These containers have already been marked to be killed.
+		          // So exclude them..
+		          continue;
+		    }
+		    extraOpportContainersToKill.add(runningCont);
+		    numToKill--;
+		       
+		}
+      }
+	  
+	  //send kill event
+	  for (Container contToKill : extraOpportContainersToKill) {
+	      contToKill.sendKillEvent(
+	          ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER,
+	          "Container Killed to make room for Guaranteed Container.");
+	      oppContainersToKill.put(contToKill.getContainerId(), contToKill);
+	      LOG.info(
+	          "Opportunistic container {} will be killed in order to free resource "
+	          ,contToKill.getContainerId()
+	      );
+	  }
+	  
+  }
   private List<Container> pickOpportunisticContainersToKill(
       ContainerId containerToStartId) {
     // The opportunistic containers that need to be killed for the

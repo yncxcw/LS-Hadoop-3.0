@@ -58,7 +58,12 @@ public class SysInfoLinux extends SysInfo {
   // We need the values for the following keys in meminfo
   private static final String MEMTOTAL_STRING = "MemTotal";
   private static final String SWAPTOTAL_STRING = "SwapTotal";
+  //free memory
   private static final String MEMFREE_STRING = "MemFree";
+  //available memory for a worklaod before swapping
+  private static final String MEMAVAI_STRING = "MemAvailable";
+  //memory is used for caching
+  private static final String MEMCACHE_STRING= "Cached";
   private static final String SWAPFREE_STRING = "SwapFree";
   private static final String INACTIVE_STRING = "Inactive";
   private static final String INACTIVEFILE_STRING = "Inactive(file)";
@@ -127,6 +132,8 @@ public class SysInfoLinux extends SysInfo {
   private long ramSize = 0;
   private long swapSize = 0;
   private long ramSizeFree = 0;  // free ram space on the machine (kB)
+  private long ramSizeCache= 0;  // mem used for file cache
+  private long ramSizeAvai = 0;  // available ram space  (KB)
   private long swapSizeFree = 0; // free swap space on the machine (kB)
   private long inactiveSize = 0; // inactive memory (kB)
   private long inactiveFileSize = -1; // inactive cache memory, -1 if not there
@@ -253,7 +260,11 @@ public class SysInfoLinux extends SysInfo {
             swapSize = Long.parseLong(mat.group(2));
           } else if (mat.group(1).equals(MEMFREE_STRING)) {
             ramSizeFree = Long.parseLong(mat.group(2));
-          } else if (mat.group(1).equals(SWAPFREE_STRING)) {
+          } else if (mat.group(1).equals(MEMAVAI_STRING)) {
+        	ramSizeAvai = Long.parseLong(mat.group(2));   
+          } else if (mat.group(1).equals(MEMCACHE_STRING)){
+        	ramSizeCache= Long.parseLong(mat.group(2));    
+          }else if (mat.group(1).equals(SWAPFREE_STRING)) {
             swapSizeFree = Long.parseLong(mat.group(2));
           } else if (mat.group(1).equals(INACTIVE_STRING)) {
             inactiveSize = Long.parseLong(mat.group(2));
@@ -592,7 +603,7 @@ public class SysInfoLinux extends SysInfo {
     long inactive = inactiveFileSize != -1
         ? inactiveFileSize
         : inactiveSize;
-    return (ramSizeFree + inactive) * 1024;
+    return (ramSizeAvai) * 1024;
   }
 
   /** {@inheritDoc} */
@@ -721,4 +732,33 @@ public class SysInfoLinux extends SysInfo {
   public long getJiffyLengthInMillis() {
     return this.jiffyLengthInMillis;
   }
+
+@Override
+public long getInactiveAno() {
+	 readProcMemInfoFile(true);
+	return (inactiveSize-inactiveFileSize)*1024;
+}
+
+@Override
+public long getInactiveFile() {
+	readProcMemInfoFile(true);
+	return inactiveFileSize*1024;
+}
+
+@Override
+public long getUsedSwap() {
+	readProcMemInfoFile(true);
+    // TODO Auto-generated method stub
+    return (swapSize - swapSizeFree)*1024;
+}
+
+@Override
+public long getCechedMemory() {
+	readProcMemInfoFile(true);
+	// TODO Auto-generated method stub
+	return ramSizeCache*1024;
+}
+
+
+
 }

@@ -64,6 +64,36 @@ public abstract class SysInfo {
    * @return available virtual memory size in bytes.
    */
   public abstract long getAvailableVirtualMemorySize();
+  
+ 
+  /**
+   * Obtain the size of anon pages
+   * @return inactive anon pages
+   */
+  
+  public abstract long getInactiveAno();
+  
+  
+  /**
+   * Obtain the size of files based pages
+   * @return inactve files based pages 
+   */
+  public abstract long getInactiveFile();
+  
+  
+  /**
+   * Obtain the size of cached memory
+   * @return cahced memory
+   */
+  
+  public abstract long getCechedMemory();
+  
+  /**
+   * Obtain the size of used swap area
+   * @return the used size of swap
+   */
+  
+  public abstract long getUsedSwap();
 
   /**
    * Obtain the total size of the available physical memory present

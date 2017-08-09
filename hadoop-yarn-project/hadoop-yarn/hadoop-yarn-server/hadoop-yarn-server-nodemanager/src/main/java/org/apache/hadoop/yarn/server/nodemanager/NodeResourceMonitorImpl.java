@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.scheduler.ContainerScheduler;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.util.ResourceCalculatorPlugin;
 
@@ -49,11 +50,14 @@ public class NodeResourceMonitorImpl extends AbstractService implements
   private ResourceUtilization nodeUtilization;
 
   private long nodeAvailableMemory;
+  
+  private Context context;
   /**
    * Initialize the node resource monitor.
    */
-  public NodeResourceMonitorImpl() {
+  public NodeResourceMonitorImpl(Context context) {
     super(NodeResourceMonitorImpl.class.getName());
+    this.context=context;
 
     this.monitoringThread = new MonitoringThread();
   }
@@ -137,6 +141,19 @@ public class NodeResourceMonitorImpl extends AbstractService implements
     @Override
     public void run() {
       while (true) {
+    	//try to launch or kill OPP containers  
+        ContainerScheduler containerScheduler=context.getContainerManager().getContainerScheduler();
+        //try to kill containers  
+        boolean isKilled=containerScheduler.tryToKillOppContainers();
+        //try to launch containers		
+        int queuingLength=containerScheduler.getNumQueuedOpportunisticContainers();
+        
+        if(queuingLength > 0 && !isKilled){
+          LOG.info("monitor try to launch containers");	
+          containerScheduler.startPendingContainers();
+        }
+    	  
+    	  
         // Get node utilization and save it into the health status
         long pmem = resourceCalculatorPlugin.getPhysicalMemorySize() -
             resourceCalculatorPlugin.getAvailablePhysicalMemorySize();
@@ -147,12 +164,33 @@ public class NodeResourceMonitorImpl extends AbstractService implements
         long vmem =
             resourceCalculatorPlugin.getVirtualMemorySize()
                 - resourceCalculatorPlugin.getAvailableVirtualMemorySize();
+        
+        long usedSwap=
+        	resourceCalculatorPlugin.getUsedSwap();
+        
+        long inactiveAnon=
+            resourceCalculatorPlugin.getInactiveAno();
+        
+        long inactiveFile=
+        	resourceCalculatorPlugin.getInactiveFile();
+        
+        long cachedMem  =
+        	resourceCalculatorPlugin.getCachedMemory();
+        
         float vcores = resourceCalculatorPlugin.getNumVCoresUsed();
         nodeUtilization =
             ResourceUtilization.newInstance(
                 (int) (pmem >> 20), // B -> MB
                 (int) (vmem >> 20), // B -> MB
                 vcores); // Used Virtual Cores
+        
+       				
+        LOG.info("nodemonitor nodeavail: "+nodeAvailableMemory+
+        		              " usedswap: "+usedSwap+
+        		              " inacanon: "+inactiveAnon+
+        		              " inacfile: "+inactiveFile+
+        		              " cachemem: "+cachedMem
+        		);
 
         try {
           Thread.sleep(monitoringInterval);

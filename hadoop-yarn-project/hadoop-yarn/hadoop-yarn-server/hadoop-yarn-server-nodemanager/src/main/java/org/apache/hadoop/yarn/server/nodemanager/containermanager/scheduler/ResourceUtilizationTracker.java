@@ -36,6 +36,8 @@ public interface ResourceUtilizationTracker {
    * @return ResourceUtilization Resource Utilization.
    */
   ResourceUtilization getCurrentUtilization();
+  
+  
 
   /**
    * Add Container's resources to Node Utilization.
@@ -55,5 +57,12 @@ public interface ResourceUtilizationTracker {
    * @return True, if NM has resources available currently to run the container.
    */
   boolean hasResourcesAvailable(Container container);
+  
+  
+  /**
+   * Check if the NM has overcommit memroy exceeding the threshold
+   * @return True, in this case OPP containers are selected to kill
+   */
+  boolean isCommitmentOverThreshold();
 
 }

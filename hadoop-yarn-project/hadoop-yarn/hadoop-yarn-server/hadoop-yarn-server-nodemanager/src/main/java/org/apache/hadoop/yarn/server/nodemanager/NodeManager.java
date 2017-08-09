@@ -168,7 +168,7 @@ public class NodeManager extends CompositeService
   }
 
   protected NodeResourceMonitor createNodeResourceMonitor() {
-    return new NodeResourceMonitorImpl();
+    return new NodeResourceMonitorImpl(context);
   }
 
   protected ContainerManagerImpl createContainerManager(Context context,

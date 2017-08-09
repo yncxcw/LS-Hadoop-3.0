@@ -1249,7 +1249,7 @@ public class YarnConfiguration extends Configuration {
   /** How often to monitor resource in a node.*/
   public static final String NM_RESOURCE_MON_INTERVAL_MS =
       NM_PREFIX + "resource-monitor.interval-ms";
-  public static final int DEFAULT_NM_RESOURCE_MON_INTERVAL_MS = 3000;
+  public static final int DEFAULT_NM_RESOURCE_MON_INTERVAL_MS = 1000;
 
   public static final String NM_CONTAINER_MONITOR_ENABLED =
       NM_PREFIX + "container-monitor.enabled";

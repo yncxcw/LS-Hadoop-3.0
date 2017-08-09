@@ -242,4 +242,28 @@ public class SysInfoWindows extends SysInfo {
     return storageBytesWritten;
   }
 
+@Override
+public long getInactiveAno() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
+@Override
+public long getInactiveFile() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
+@Override
+public long getUsedSwap() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
+@Override
+public long getCechedMemory() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
 }

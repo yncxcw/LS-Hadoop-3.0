@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.yarn.server.nodemanager.containermanager.scheduler;
 
+import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainersMonitor;
@@ -36,13 +37,20 @@ public class AllocationBasedResourceUtilizationTracker implements
       LoggerFactory.getLogger(AllocationBasedResourceUtilizationTracker.class);
 
   private ResourceUtilization containersAllocation;
+  private ResourceUtilization OppContainersAllocation;
+  private ResourceUtilization GuaContainersAllocation;
   private ContainerScheduler scheduler;
   private final Context context;
+  private final long pMemThreshold;
 
   AllocationBasedResourceUtilizationTracker(ContainerScheduler scheduler,Context context) {
     this.containersAllocation = ResourceUtilization.newInstance(0, 0, 0.0f);
+    this.OppContainersAllocation = ResourceUtilization.newInstance(0, 0, 0.0f);
+    this.GuaContainersAllocation = ResourceUtilization.newInstance(0, 0, 0.0f);
     this.scheduler = scheduler;
     this.context=context;
+    //current it is 1GB
+    this.pMemThreshold=(1<<30);
   }
 
   /**
@@ -62,6 +70,17 @@ public class AllocationBasedResourceUtilizationTracker implements
   public void addContainerResources(Container container) {
 	LOG.info("launching new container: "+container.getContainerId()+" new resource: "
 			+this.containersAllocation);
+	if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.GUARANTEED){
+		ContainersMonitor.increaseResourceUtilization(
+		 getContainersMonitor(),this.GuaContainersAllocation,
+		 container.getResource()
+		);
+	}else if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.OPPORTUNISTIC){
+		ContainersMonitor.increaseResourceUtilization(
+		  getContainersMonitor(),this.OppContainersAllocation,
+		  container.getResource()
+		);
+	}
     ContainersMonitor.increaseResourceUtilization(
         getContainersMonitor(), this.containersAllocation,
         container.getResource());
@@ -75,6 +94,17 @@ public class AllocationBasedResourceUtilizationTracker implements
   public void subtractContainerResource(Container container) {
 	LOG.info("finish container: "+container.getContainerId()+" new resource: "
 				+this.containersAllocation); 
+	if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.GUARANTEED){
+		ContainersMonitor.decreaseResourceUtilization(
+		 getContainersMonitor(),this.GuaContainersAllocation,
+		 container.getResource()
+		);
+	}else if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.OPPORTUNISTIC){
+		ContainersMonitor.decreaseResourceUtilization(
+		  getContainersMonitor(),this.OppContainersAllocation,
+		  container.getResource()
+		);
+	}
 	
     ContainersMonitor.decreaseResourceUtilization(
         getContainersMonitor(), this.containersAllocation,
@@ -88,6 +118,12 @@ public class AllocationBasedResourceUtilizationTracker implements
    */
   @Override
   public boolean hasResourcesAvailable(Container container) {
+	
+	if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.GUARANTEED){
+		
+	   return true;	
+	}
+	  
     long pMemBytes = container.getResource().getMemorySize() * 1024 * 1024L;
     //return hasResourcesAvailable(pMemBytes,
     //     (long) (getContainersMonitor().getVmemRatio()* pMemBytes),
@@ -99,14 +135,16 @@ public class AllocationBasedResourceUtilizationTracker implements
   private boolean hasResourcesAvailable(long pMemBytes){
 	  
 	  
+	  
 	  long hostAvaiPMem=this.context.getNodeResourceMonitor().getAvailableMemory();
 	  
-	  LOG.info("checking allocation: "+this.containersAllocation+" host used: "+
-		" queuing: "+this.scheduler.getNumQueuedContainers()+
-		" running: "+this.scheduler.getRunningContainers());
+	  LOG.info(" checking allocation: "+this.containersAllocation+
+			   " host avai: "+ hostAvaiPMem+ 
+		       " queuing: "+this.scheduler.getNumQueuedContainers()+
+		       " running: "+this.scheduler.getRunningContainers());
 	  
 	  
-	  if(hostAvaiPMem > pMemBytes ){
+	  if(hostAvaiPMem < pMemBytes ){
 	     
 		 LOG.info("resource is not available");
 	     return false;         
@@ -166,4 +204,14 @@ public class AllocationBasedResourceUtilizationTracker implements
   public ContainersMonitor getContainersMonitor() {
     return this.scheduler.getContainersMonitor();
   }
+
+@Override
+public boolean isCommitmentOverThreshold() {
+	if(hasResourcesAvailable(pMemThreshold)){
+		return false;
+	}else{
+		return true;
+
+	}
+ }
 }

@@ -84,6 +84,45 @@ public class ResourceCalculatorPlugin extends Configured {
     return sys.getAvailablePhysicalMemorySize();
   }
 
+  
+  
+  /**
+   * Obtain the size of anon pages
+   * @return inactive anon pages
+   */
+  
+  public long getInactiveAno(){
+	return sys.getInactiveAno();  
+  }
+  
+  
+  /**
+   * Obtain the size of files based pages
+   * @return inactve files based pages 
+   */
+  public long getInactiveFile(){
+	return sys.getInactiveFile();  
+  }
+  
+  
+  /**
+   * Obtain the size of used swap area
+   * @return the used size of swap
+   */
+  
+  public long getUsedSwap(){
+	 return sys.getUsedSwap(); 
+  }
+  
+  
+  /**
+   * Obtain the size of cached memory
+   * @return the used size of cached memory
+   */
+  public long getCachedMemory(){
+	 return sys.getCechedMemory(); 
+  }
+  
   /**
    * Obtain the total number of logical processors present on the system.
    *
