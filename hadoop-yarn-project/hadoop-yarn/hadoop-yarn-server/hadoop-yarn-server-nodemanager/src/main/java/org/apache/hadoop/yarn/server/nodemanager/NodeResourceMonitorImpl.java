@@ -151,6 +151,7 @@ public class NodeResourceMonitorImpl extends AbstractService implements
       //if pmem launch is enabled, then periodically check the resource availability
       //kill and launch containers.
       if(enablePmemLaunch){  
+    	LOG.info("pMem launch");  
     	//try to launch or kill OPP containers  
         ContainerScheduler containerScheduler=context.getContainerManager().getContainerScheduler();
         //try to kill containers  
