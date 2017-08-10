@@ -1683,7 +1683,7 @@ public class ContainerImpl implements Container {
       if (newState != null && oldState != newState) {
         LOG.info("Container " + containerID + " transitioned from "
             + oldState
-            + " to " + newState);
+            + " to " + newState+" on event = "+event.getType());
       }
     } finally {
       this.writeLock.unlock();

@@ -52,6 +52,8 @@ public class NodeResourceMonitorImpl extends AbstractService implements
   private long nodeAvailableMemory;
   
   private Context context;
+  
+  private boolean enablePmemLaunch;
   /**
    * Initialize the node resource monitor.
    */
@@ -70,6 +72,10 @@ public class NodeResourceMonitorImpl extends AbstractService implements
     this.monitoringInterval =
         conf.getLong(YarnConfiguration.NM_RESOURCE_MON_INTERVAL_MS,
             YarnConfiguration.DEFAULT_NM_RESOURCE_MON_INTERVAL_MS);
+    
+    this.enablePmemLaunch =
+    	conf.getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
+    		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
 
     this.resourceCalculatorPlugin =
         ResourceCalculatorPlugin.getNodeResourceMonitorPlugin(conf);
@@ -141,6 +147,10 @@ public class NodeResourceMonitorImpl extends AbstractService implements
     @Override
     public void run() {
       while (true) {
+       
+      //if pmem launch is enabled, then periodically check the resource availability
+      //kill and launch containers.
+      if(enablePmemLaunch){  
     	//try to launch or kill OPP containers  
         ContainerScheduler containerScheduler=context.getContainerManager().getContainerScheduler();
         //try to kill containers  
@@ -151,8 +161,8 @@ public class NodeResourceMonitorImpl extends AbstractService implements
         if(queuingLength > 0 && !isKilled){
           LOG.info("monitor try to launch containers");	
           containerScheduler.startPendingContainers();
-        }
-    	  
+         }
+       }  
     	  
         // Get node utilization and save it into the health status
         long pmem = resourceCalculatorPlugin.getPhysicalMemorySize() -

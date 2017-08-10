@@ -488,7 +488,7 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
       }
       if (oldState != getState()) {
         LOG.info(event.getContainerId() + " Container Transitioned from "
-            + oldState + " to " + getState());
+            + oldState + " to " + getState()+" on event = "+event.getType());
       }
     }
     

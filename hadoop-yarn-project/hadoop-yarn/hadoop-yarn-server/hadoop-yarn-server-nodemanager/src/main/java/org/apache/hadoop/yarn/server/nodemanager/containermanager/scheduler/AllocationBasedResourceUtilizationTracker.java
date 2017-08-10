@@ -20,6 +20,7 @@ package org.apache.hadoop.yarn.server.nodemanager.containermanager.scheduler;
 
 import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainersMonitor;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public class AllocationBasedResourceUtilizationTracker implements
   private ContainerScheduler scheduler;
   private final Context context;
   private final long pMemThreshold;
+  private boolean enablePmemLaunch;
 
   AllocationBasedResourceUtilizationTracker(ContainerScheduler scheduler,Context context) {
     this.containersAllocation = ResourceUtilization.newInstance(0, 0, 0.0f);
@@ -51,6 +53,10 @@ public class AllocationBasedResourceUtilizationTracker implements
     this.context=context;
     //current it is 1GB
     this.pMemThreshold=(1<<30);
+    this.enablePmemLaunch=this.context.getConf().
+    		  getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
+    		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
+  
   }
 
   /**
@@ -119,16 +125,21 @@ public class AllocationBasedResourceUtilizationTracker implements
   @Override
   public boolean hasResourcesAvailable(Container container) {
 	
-	if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.GUARANTEED){
+	long pMemBytes = container.getResource().getMemorySize() * 1024 * 1024L;   
+	if(enablePmemLaunch){  
+		//no matter what, launch GUA containers 
+		if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.GUARANTEED){
 		
-	   return true;	
+			return true;	
+		}
+		//this is a OPP containers
+		return hasResourcesAvailable(pMemBytes);
+	}else{
+		return hasResourcesAvailable(pMemBytes,
+	         (long) (getContainersMonitor().getVmemRatio()* pMemBytes),
+	        container.getResource().getVirtualCores());
+		
 	}
-	  
-    long pMemBytes = container.getResource().getMemorySize() * 1024 * 1024L;
-    //return hasResourcesAvailable(pMemBytes,
-    //     (long) (getContainersMonitor().getVmemRatio()* pMemBytes),
-    //    container.getResource().getVirtualCores());
-    return hasResourcesAvailable(pMemBytes);     
   }
 
   //what if we only consider realtime physical memory usage

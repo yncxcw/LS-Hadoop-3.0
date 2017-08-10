@@ -1246,6 +1246,11 @@ public class YarnConfiguration extends Configuration {
       NM_PREFIX + "webapp.cross-origin.enabled";
   public static final boolean DEFAULT_NM_WEBAPP_ENABLE_CORS_FILTER = false;
 
+  public static final String NM_ENABLE_PMEM_LAUNCH=
+	  NM_PREFIX+"pmem.launch.enabled";
+  
+  public static final boolean DEFAULT_NM_ENABLE_PMEM_LAUNCH = false;
+  
   /** How often to monitor resource in a node.*/
   public static final String NM_RESOURCE_MON_INTERVAL_MS =
       NM_PREFIX + "resource-monitor.interval-ms";
