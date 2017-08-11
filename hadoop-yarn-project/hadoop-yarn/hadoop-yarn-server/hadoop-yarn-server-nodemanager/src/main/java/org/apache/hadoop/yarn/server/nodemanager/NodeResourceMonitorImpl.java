@@ -158,10 +158,13 @@ public class NodeResourceMonitorImpl extends AbstractService implements
         boolean isKilled=containerScheduler.tryToKillOppContainers();
         //try to launch containers		
         int queuingLength=containerScheduler.getNumQueuedOpportunisticContainers();
+        int runningLength=containerScheduler.getRunningContainers();
+        
+        LOG.info("queuing: "+queuingLength+" running: "+runningLength);
         
         if(queuingLength > 0 && !isKilled){
           LOG.info("monitor try to launch containers");	
-          containerScheduler.startPendingContainers();
+          containerScheduler.startPendingContainers(true);
          }
        }  
     	  

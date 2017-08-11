@@ -62,6 +62,8 @@ public class ContainerScheduler extends AbstractService implements
 
   private final Context context;
   private final int maxOppQueueLength;
+  
+  private boolean enablePmemLaunch;
 
   // Queue of Guaranteed Containers waiting for resources to run
   private final LinkedHashMap<ContainerId, Container>
@@ -103,10 +105,16 @@ public class ContainerScheduler extends AbstractService implements
    */
   public ContainerScheduler(Context context, AsyncDispatcher dispatcher,
       NodeManagerMetrics metrics) {
+	  
+	  
     this(context, dispatcher, metrics, context.getConf().getInt(
         YarnConfiguration.NM_OPPORTUNISTIC_CONTAINERS_MAX_QUEUE_LENGTH,
         YarnConfiguration.
             DEFAULT_NM_OPPORTUNISTIC_CONTAINERS_MAX_QUEUE_LENGTH));
+    
+    this.enablePmemLaunch =
+        	context.getConf().getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
+        		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
   }
 
   @VisibleForTesting
@@ -202,17 +210,17 @@ public class ContainerScheduler extends AbstractService implements
           ExecutionType.OPPORTUNISTIC) {
         this.metrics.completeOpportunisticContainer(container.getResource());
       }
-      startPendingContainers();
+      startPendingContainers(false);
     }
   }
 
-  public void startPendingContainers() {
+  public void startPendingContainers(boolean launchedByMonitor) {
     // Start pending guaranteed containers, if resources available.
     boolean resourcesAvailable =
-        startContainersFromQueue(queuedGuaranteedContainers.values());
+        startContainersFromQueue(queuedGuaranteedContainers.values(),launchedByMonitor);
     // Start opportunistic containers, if resources available.
     if (resourcesAvailable) {
-      startContainersFromQueue(queuedOpportunisticContainers.values());
+      startContainersFromQueue(queuedOpportunisticContainers.values(),launchedByMonitor);
     }
   }
   
@@ -230,12 +238,16 @@ public class ContainerScheduler extends AbstractService implements
   }
 
   private boolean startContainersFromQueue(
-      Collection<Container> queuedContainers) {
+      Collection<Container> queuedContainers,
+      boolean launchedByMonitor) {
     Iterator<Container> cIter = queuedContainers.iterator();
     boolean resourcesAvailable = true;
     while (cIter.hasNext() && resourcesAvailable) {
       Container container = cIter.next();
       if (this.utilizationTracker.hasResourcesAvailable(container)) {
+    	if(launchedByMonitor){
+    	  LOG.info("monitor launch "+container.getContainerId());	
+    	}  
         startAllocatedContainer(container);
         cIter.remove();
       } else {

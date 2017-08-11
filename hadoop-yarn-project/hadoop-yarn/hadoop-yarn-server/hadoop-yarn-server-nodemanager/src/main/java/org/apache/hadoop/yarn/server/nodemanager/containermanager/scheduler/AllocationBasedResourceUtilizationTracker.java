@@ -145,22 +145,14 @@ public class AllocationBasedResourceUtilizationTracker implements
   //what if we only consider realtime physical memory usage
   private boolean hasResourcesAvailable(long pMemBytes){
 	  
-	  
-	  
 	  long hostAvaiPMem=this.context.getNodeResourceMonitor().getAvailableMemory();
-	  
-	  LOG.info(" checking allocation: "+this.containersAllocation+
-			   " host avai: "+ hostAvaiPMem+ 
-		       " queuing: "+this.scheduler.getNumQueuedContainers()+
-		       " running: "+this.scheduler.getRunningContainers());
-	  
 	  
 	  if(hostAvaiPMem < pMemBytes ){
 	     
-		 LOG.info("resource is not available");
+		 LOG.info("hostAvail: "+hostAvaiPMem+" pMem: "+pMemBytes+"resource is not available");
 	     return false;         
 	   }else{
-		 LOG.info("resource is available");  
+		 LOG.info("hostAvail: "+hostAvaiPMem+" pMem: "+pMemBytes+"resource is available");  
 		 return true;  
 	   } 
 	  
@@ -221,6 +213,7 @@ public boolean isCommitmentOverThreshold() {
 	if(hasResourcesAvailable(pMemThreshold)){
 		return false;
 	}else{
+		LOG.info("memory overcommitment: kill containers");
 		return true;
 
 	}
