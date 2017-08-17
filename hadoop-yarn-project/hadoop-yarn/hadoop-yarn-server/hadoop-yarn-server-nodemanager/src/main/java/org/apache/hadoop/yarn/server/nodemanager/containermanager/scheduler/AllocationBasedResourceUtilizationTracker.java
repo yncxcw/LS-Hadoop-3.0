@@ -51,8 +51,8 @@ public class AllocationBasedResourceUtilizationTracker implements
     this.GuaContainersAllocation = ResourceUtilization.newInstance(0, 0, 0.0f);
     this.scheduler = scheduler;
     this.context=context;
-    //current it is 1GB
-    this.pMemThreshold=(1<<30);
+    //current it is 5GB
+    this.pMemThreshold=(5<<30);
     this.enablePmemLaunch=this.context.getConf().
     		  getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
     		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
@@ -147,7 +147,7 @@ public class AllocationBasedResourceUtilizationTracker implements
 	  
 	  long hostAvaiPMem=this.context.getNodeResourceMonitor().getAvailableMemory();
 	  
-	  if(hostAvaiPMem < pMemBytes ){
+	  if(hostAvaiPMem < pMemBytes + pMemThreshold){
 	     
 		 LOG.info("hostAvail: "+hostAvaiPMem+" pMem: "+pMemBytes+"resource is not available");
 	     return false;         
