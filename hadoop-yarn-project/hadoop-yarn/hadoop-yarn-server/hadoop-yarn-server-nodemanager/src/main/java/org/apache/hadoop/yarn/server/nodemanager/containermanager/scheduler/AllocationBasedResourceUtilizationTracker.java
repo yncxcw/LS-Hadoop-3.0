@@ -208,13 +208,16 @@ public class AllocationBasedResourceUtilizationTracker implements
     return this.scheduler.getContainersMonitor();
   }
 
+ //return memory slack to instruct to kill containers
 @Override
-public boolean isCommitmentOverThreshold() {
-	if(hasResourcesAvailable(pMemThreshold)){
-		return false;
+public long isCommitmentOverThreshold() {
+	long hostAvaiPMem=this.context.getNodeResourceMonitor().getAvailableMemory();
+	long slack = hostAvaiPMem - this.pMemThreshold;
+	if(slack > 0){
+		return slack;
 	}else{
-		LOG.info("memory overcommitment: kill containers");
-		return true;
+		LOG.info("memory overcommitment: kill containers slack: "+slack);
+		return slack;
 
 	}
  }

@@ -61,8 +61,8 @@ public interface ResourceUtilizationTracker {
   
   /**
    * Check if the NM has overcommit memroy exceeding the threshold
-   * @return True, in this case OPP containers are selected to kill
+   * @return memory slack, in this case OPP containers are selected to kill
    */
-  boolean isCommitmentOverThreshold();
+  long isCommitmentOverThreshold();
 
 }

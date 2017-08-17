@@ -28,6 +28,7 @@ public class SampleStat {
   private final MinMax minmax = new MinMax();
   private long numSamples = 0;
   private double a0, a1, s0, s1, total;
+  private double newest;
 
   /**
    * Construct a new running sample stat
@@ -52,6 +53,7 @@ public class SampleStat {
     this.a1 = a1;
     this.s0 = s0;
     this.s1 = s1;
+    this.newest=0;
     this.total = total;
     this.minmax.reset(minmax);
   }
@@ -84,6 +86,7 @@ public class SampleStat {
   public SampleStat add(long nSamples, double x) {
     numSamples += nSamples;
     total += x;
+    newest=x;
 
     if (numSamples == 1) {
       a0 = a1 = x;
@@ -97,6 +100,15 @@ public class SampleStat {
       s0 = s1;
     }
     return this;
+  }
+  /**
+   * 
+   * @return the newest value
+   */
+  
+  
+  public double newest() {
+	  return newest;
   }
 
   /**
@@ -155,7 +167,8 @@ public class SampleStat {
           "  Min = " + min() +
           "  Mean = " + mean() +
           "  Std Dev = " + stddev() +
-          "  Max = " + max();
+          "  Max = " + max()+
+          "  Newest="+ newest();
     } catch (Throwable t) {
       return super.toString();
     }

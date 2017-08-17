@@ -31,6 +31,7 @@ import org.apache.hadoop.yarn.server.api.records.ContainerQueuingLimit;
 import org.apache.hadoop.yarn.server.api.records.OpportunisticContainersStatus;
 import org.apache.hadoop.yarn.server.nodemanager.Context;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainerMetrics;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainersMonitor;
 
 
@@ -227,9 +228,10 @@ public class ContainerScheduler extends AbstractService implements
   //based on the pmem usage, kill opp containers.
   //return true if decide to kill
   public boolean tryToKillOppContainers(){
-	int containersToKill=1;  
-	if(this.utilizationTracker.isCommitmentOverThreshold()){
-		RandomPickOppConainersToKill(containersToKill);
+	long slack = this.utilizationTracker.isCommitmentOverThreshold();
+	if(slack < 0){
+		slack=-slack;
+		RandomPickOppConainersToKill(slack);
 		return true; 
 	}else{
 		
@@ -335,11 +337,13 @@ public class ContainerScheduler extends AbstractService implements
     container.sendLaunchEvent();
   }
 
-  private void RandomPickOppConainersToKill(int numToKill){
+  
+  //kill containers based on physical memory slack
+  private void RandomPickOppConainersToKill(long slack){
 	  List<Container> extraOpportContainersToKill = new ArrayList<>();
 	  Iterator<Container> lifoIterator = new LinkedList<>(
 		        runningContainers.values()).descendingIterator();
-	  while(lifoIterator.hasNext() && numToKill > 0) {
+	  while(lifoIterator.hasNext() && slack > 0) {
 		      Container runningCont = lifoIterator.next();
 	    if (runningCont.getContainerTokenIdentifier().getExecutionType() ==
 		          ExecutionType.OPPORTUNISTIC) {
@@ -351,7 +355,14 @@ public class ContainerScheduler extends AbstractService implements
 		          continue;
 		    }
 		    extraOpportContainersToKill.add(runningCont);
-		    numToKill--;
+		    //get newest pmem usage for container
+		    ContainerMetrics contMetrict = ContainerMetrics.getContainerMetrics(runningCont.getContainerId());
+		    long contPmem = (long)contMetrict.pMemMBsStat.lastStat().newest();
+		    //from mb to bytes
+		    contPmem = (contPmem  << 20);
+		    //update slack
+		    slack -= contPmem;
+		    //numToKill--;
 		       
 		}
       }
