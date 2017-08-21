@@ -198,13 +198,29 @@ public class ContainerScheduler extends AbstractService implements
     // in which case, the container might still be queued.
     Container queued =
         queuedOpportunisticContainers.remove(container.getContainerId());
-    if (queued == null) {
+    
+    //record successful opp containers run time and maximum memory usage
+    //we only
+    if(queued != null){
+    	//we only care about container with successful exit state
+    	if(queued.cloneAndGetContainerStatus().getExitStatus() == 0){
+         //in mill-seconds		
+    	 long contRuntime = queued.getRunningTime();
+    	 ContainerMetrics contMetrict = ContainerMetrics.getContainerMetrics(queued.getContainerId());
+		 long contMaxPmem = (long)contMetrict.pMemMBsStat.lastStat().max();
+		 //from mb to bytes
+		 contMaxPmem = (contMaxPmem << 20);
+		 utilizationTracker.addFinishedOppTimeAndPmem(contRuntime, contMaxPmem);
+		 
+    	}
+    }else{
       queuedGuaranteedContainers.remove(container.getContainerId());
     }
 
     // decrement only if it was a running container
     Container completedContainer = runningContainers.remove(container
         .getContainerId());
+   
     if (completedContainer != null) {
       this.utilizationTracker.subtractContainerResource(container);
       if (container.getContainerTokenIdentifier().getExecutionType() ==
@@ -493,4 +509,6 @@ public class ContainerScheduler extends AbstractService implements
   public ContainersMonitor getContainersMonitor() {
     return this.context.getContainerManager().getContainersMonitor();
   }
+  
+  
 }

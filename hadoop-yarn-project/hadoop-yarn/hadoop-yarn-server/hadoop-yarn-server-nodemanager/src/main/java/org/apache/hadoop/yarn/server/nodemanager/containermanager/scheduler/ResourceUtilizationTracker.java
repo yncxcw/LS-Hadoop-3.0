@@ -65,4 +65,10 @@ public interface ResourceUtilizationTracker {
    */
   long isCommitmentOverThreshold();
 
+  /**
+   * tacking recent finished opp time and pmem
+   * @param time opp running time
+   * @param pmem opp max pmem usae
+   */
+  void addFinishedOppTimeAndPmem(long time, long pmem);
 }

@@ -18,6 +18,9 @@
 
 package org.apache.hadoop.yarn.server.nodemanager.containermanager.scheduler;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -40,6 +43,10 @@ public class AllocationBasedResourceUtilizationTracker implements
   private ResourceUtilization containersAllocation;
   private ResourceUtilization OppContainersAllocation;
   private ResourceUtilization GuaContainersAllocation;
+  
+  private FixedSizeQueue recentOppRunningTime;
+  private FixedSizeQueue recentOppMaxPmem;
+  
   private ContainerScheduler scheduler;
   private final Context context;
   private final long pMemThreshold;
@@ -53,6 +60,10 @@ public class AllocationBasedResourceUtilizationTracker implements
     this.context=context;
     //current it is 5GB
     this.pMemThreshold=(5<<30);
+    //we set recent 20 opp container as our reference, make this parameter tunable
+    this.recentOppMaxPmem = new FixedSizeQueue(20);
+    this.recentOppRunningTime = new FixedSizeQueue(20);
+    
     this.enablePmemLaunch=this.context.getConf().
     		  getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
     		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
@@ -221,4 +232,72 @@ public long isCommitmentOverThreshold() {
 
 	}
  }
+
+@Override
+//time(millseconds) pmem(bytes)
+public void addFinishedOppTimeAndPmem(long time, long pmem) {
+	this.recentOppMaxPmem.add(pmem);
+	this.recentOppRunningTime.add(time);
+	
+}
+
+
+
+public class FixedSizeQueue{
+		
+	private List<Double> datas= new LinkedList<Double>();
+	
+	private int limit;
+	
+	
+	public FixedSizeQueue(int limit){
+		
+		this.limit = limit;
+	}
+	
+	//add element
+	public void add(double e){
+		
+		datas.add(e);
+		this.trim();
+	}
+	
+	//trim queue by size
+	public void trim(){
+	  
+		while(datas.size() > limit){
+		   datas.remove(datas.size()-1);	
+		}
+	}
+	
+	public double average(){
+	  double sum=0;
+	  for(double e : datas){
+		  sum += e;
+	  }
+	  return sum/datas.size();
+	  	
+	}
+	
+	public double max(){
+	  double max=Double.MIN_VALUE;
+	  for(double e : datas){
+		  if(e > max)
+			   max = e;
+	  }
+	  return max;
+	}
+	
+	public double min(){
+	  double min=Double.MAX_VALUE;
+	  for(double e: datas){
+		  if(e < min)
+			  min = e;
+	  }
+	  return min;
+	}	
+  }
+
+
+
 }

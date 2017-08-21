@@ -155,6 +155,7 @@ public class ContainerImpl implements Container {
   private boolean wasLaunched;
   private long containerLocalizationStartTime;
   private long containerLaunchStartTime;
+  private long containerFinishTime;
   private ContainerMetrics containerMetrics;
   private static Clock clock = SystemClock.getInstance();
   private ContainerRetryContext containerRetryContext;
@@ -206,6 +207,7 @@ public class ContainerImpl implements Container {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     this.context = context;
+    this.containerFinishTime=-1;
     boolean containerMetricsEnabled =
         conf.getBoolean(YarnConfiguration.NM_CONTAINER_METRICS_ENABLE,
             YarnConfiguration.DEFAULT_NM_CONTAINER_METRICS_ENABLE);
@@ -692,7 +694,10 @@ public class ContainerImpl implements Container {
     // Inform the application
     @SuppressWarnings("rawtypes")
     EventHandler eventHandler = dispatcher.getEventHandler();
-
+    
+    //record finish Time
+    this.containerFinishTime = clock.getTime();
+    
     ContainerStatus containerStatus = cloneAndGetContainerStatus();
     eventHandler.handle(new ApplicationContainerFinishedEvent(containerStatus));
 
@@ -1181,7 +1186,7 @@ public class ContainerImpl implements Container {
       container.setIsReInitializing(false);
       // Set exit code to 0 on success    	
       container.exitCode = 0;
-    	
+ 
       // TODO: Add containerWorkDir to the deletion service.
 
       if (clCleanupRequired) {
@@ -1756,4 +1761,17 @@ public class ContainerImpl implements Container {
   public void commitUpgrade() {
     this.reInitContext = null;
   }
+
+@Override
+public long getRunningTime() {
+	
+	//illegally call this function will get -1
+	if(this.containerFinishTime > this.containerLocalizationStartTime){
+		return this.containerFinishTime - this.containerLocalizationStartTime;
+	}else{
+		
+		return -1;
+	}
+	
+}
 }
