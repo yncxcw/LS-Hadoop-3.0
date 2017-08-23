@@ -202,15 +202,17 @@ public class ContainerScheduler extends AbstractService implements
     //record successful opp containers run time and maximum memory usage
     //we only
     if(queued != null){
-    	//we only care about container with successful exit state
-    	if(queued.cloneAndGetContainerStatus().getExitStatus() == 0){
+    	//we only use container with successful exit state
+        //and container never finished profiling
+    	if(queued.cloneAndGetContainerStatus().getExitStatus() == 0
+    		&& !container.isProfileFinished()){
          //in mill-seconds		
     	 long contRuntime = queued.getRunningTime();
     	 ContainerMetrics contMetrict = ContainerMetrics.getContainerMetrics(queued.getContainerId());
 		 long contMaxPmem = (long)contMetrict.pMemMBsStat.lastStat().max();
 		 //from mb to bytes
 		 contMaxPmem = (contMaxPmem << 20);
-		 utilizationTracker.addFinishedOppTimeAndPmem(contRuntime, contMaxPmem);
+		 utilizationTracker.addProfiledTimeAndPmem(contRuntime, contMaxPmem);
 		 
     	}
     }else{
@@ -511,4 +513,7 @@ public class ContainerScheduler extends AbstractService implements
   }
   
   
+  public ResourceUtilizationTracker getUtilizationTracker(){
+	return this.utilizationTracker;  
+  }
 }

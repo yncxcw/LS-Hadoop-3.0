@@ -603,7 +603,9 @@ public class ContainersMonitorImpl extends AbstractService implements
                 containerMetricsUnregisterDelayMs).recordMemoryUsage(
                 (int) (currentPmemUsage >> 20));
        //physical memory 
-       //LOG.info("container: "+containerId+" pm  "+ (int) (currentPmemUsage >> 20));
+       LOG.info(" "+containerId+" pm "+ (int)(currentPmemUsage >> 20));
+       Container container = context.getContainers().get(containerId);
+       container.profilePmem(currentPmemUsage);
        //metrics
        //LOG.info(ContainerMetrics.getContainerMetrics(containerId).pMemMBsStat.toString());
         ContainerMetrics.forContainer(
@@ -675,6 +677,8 @@ public class ContainersMonitorImpl extends AbstractService implements
           LOG.error("Killed container process with PID " + pId
                   + " but it is not a process group leader.");
         }
+        
+        
         // kill the container
         eventDispatcher.getEventHandler().handle(
                 new ContainerKillEvent(containerId,

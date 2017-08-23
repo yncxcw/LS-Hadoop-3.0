@@ -44,8 +44,11 @@ public class AllocationBasedResourceUtilizationTracker implements
   private ResourceUtilization OppContainersAllocation;
   private ResourceUtilization GuaContainersAllocation;
   
-  private FixedSizeQueue recentOppRunningTime;
-  private FixedSizeQueue recentOppMaxPmem;
+  private FixedSizeQueue recentOppProfileTime;
+  private FixedSizeQueue recentOppProfilePmem;
+  
+  //TODO estimated memory usage
+  private long estimiatedMemUsage;
   
   private ContainerScheduler scheduler;
   private final Context context;
@@ -61,8 +64,8 @@ public class AllocationBasedResourceUtilizationTracker implements
     //current it is 5GB
     this.pMemThreshold=(5<<30);
     //we set recent 20 opp container as our reference, make this parameter tunable
-    this.recentOppMaxPmem = new FixedSizeQueue(20);
-    this.recentOppRunningTime = new FixedSizeQueue(20);
+    this.recentOppProfileTime = new FixedSizeQueue(20);
+    this.recentOppProfilePmem = new FixedSizeQueue(20);
     
     this.enablePmemLaunch=this.context.getConf().
     		  getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
@@ -235,13 +238,11 @@ public long isCommitmentOverThreshold() {
 
 @Override
 //time(millseconds) pmem(bytes)
-public void addFinishedOppTimeAndPmem(long time, long pmem) {
-	this.recentOppMaxPmem.add(pmem);
-	this.recentOppRunningTime.add(time);
+public void addProfiledTimeAndPmem(long time, long pmem) {
+	this.recentOppProfilePmem.add(pmem);
+	this.recentOppProfileTime.add(time);
 	
 }
-
-
 
 public class FixedSizeQueue{
 		
@@ -263,10 +264,9 @@ public class FixedSizeQueue{
 	}
 	
 	//trim queue by size
-	public void trim(){
-	  
+	public void trim(){	  
 		while(datas.size() > limit){
-		   datas.remove(datas.size()-1);	
+		   datas.remove(0);	
 		}
 	}
 	
@@ -297,7 +297,5 @@ public class FixedSizeQueue{
 	  return min;
 	}	
   }
-
-
 
 }

@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -156,6 +157,7 @@ public class ContainerImpl implements Container {
   private long containerLocalizationStartTime;
   private long containerLaunchStartTime;
   private long containerFinishTime;
+  
   private ContainerMetrics containerMetrics;
   private static Clock clock = SystemClock.getInstance();
   private ContainerRetryContext containerRetryContext;
@@ -168,6 +170,11 @@ public class ContainerImpl implements Container {
   private volatile ReInitializationContext reInitContext;
   private volatile boolean isReInitializing = false;
   private volatile boolean isMarkeForKilling = false;
+  //memory profile
+  private List<Long> profiledPmem;
+  private boolean profileFinished;
+  //TODO make this configurable
+  private double profileThreshold=0.1;
 
   /** The NM-wide configuration - not specific to this container */
   private final Configuration daemonConf;
@@ -207,6 +214,8 @@ public class ContainerImpl implements Container {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     this.context = context;
+    this.profileFinished=false;
+    this.profiledPmem=new LinkedList<Long>();
     this.containerFinishTime=-1;
     boolean containerMetricsEnabled =
         conf.getBoolean(YarnConfiguration.NM_CONTAINER_METRICS_ENABLE,
@@ -1764,14 +1773,66 @@ public class ContainerImpl implements Container {
 
 @Override
 public long getRunningTime() {
-	
 	//illegally call this function will get -1
-	if(this.containerFinishTime > this.containerLocalizationStartTime){
-		return this.containerFinishTime - this.containerLocalizationStartTime;
+	if(this.containerFinishTime > this.containerLaunchStartTime){
+		return this.containerFinishTime - this.containerLaunchStartTime;
 	}else{
 		
 		return -1;
-	}
+	}	
+}
+
+//this funciton is used to profile pmem usage to implement
+//some aided method
+@Override
+public void profilePmem(long pMem) {
 	
+	  if(profileFinished){
+		  return;
+	  }
+	   
+	  //only profile 3 values
+	  if(this.profiledPmem.size() >= 3){
+		  this.profiledPmem.remove(0);
+	  }
+	  profiledPmem.add(pMem);
+	  
+	  if(profiledPmem.size() < 3){
+		  
+		  return;
+	  }
+	  //calculate standard deviation
+	  double mean=0;
+	  for(long e : this.profiledPmem)
+		   mean += e;
+	  
+	  mean = mean/profiledPmem.size();
+	
+	  double sumdev=0;
+	  for(long e : this.profiledPmem)
+		   sumdev += Math.pow((double)(e - mean), 2);
+	  double sdev = Math.sqrt(sumdev/profiledPmem.size());
+	  double coff =sdev/mean;
+	  
+	  //record this profile point
+	  if(coff < this.profileThreshold){
+		  long current = clock.getTime();
+		  //should be active
+		  long profileTime = current - this.containerLaunchStartTime;
+		  //In bytes
+		  long profilePmem = pMem;
+		  this.context.getContainerManager().
+		    getContainerScheduler().getUtilizationTracker().
+		     addProfiledTimeAndPmem(profileTime, profilePmem);
+		  this.profileFinished=true;
+	  }
+	 
+	  
+   }
+
+@Override
+public boolean isProfileFinished() {
+	
+	return this.profileFinished;
 }
 }
