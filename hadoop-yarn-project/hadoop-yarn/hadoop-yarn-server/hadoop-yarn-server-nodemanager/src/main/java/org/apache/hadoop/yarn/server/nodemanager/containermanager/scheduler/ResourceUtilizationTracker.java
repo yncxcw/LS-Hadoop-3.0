@@ -60,10 +60,10 @@ public interface ResourceUtilizationTracker {
   
   
   /**
-   * Check if the NM has overcommit memroy exceeding the threshold
+   * Check if the NM has overcommitment memroy exceeding the threshold based on requst
    * @return memory slack, in this case OPP containers are selected to kill
    */
-  long isCommitmentOverThreshold();
+  long isCommitmentOverThreshold(long request);
 
   /**
    * tacking recent finished profiling opp time and pmem
@@ -71,4 +71,10 @@ public interface ResourceUtilizationTracker {
    * @param pmem opp profiled max pmem usae
    */
   void addProfiledTimeAndPmem(long time, long pmem);
+  
+  /**
+   * sync estimated memory with acutal used memory
+   */
+  
+  void syncEstimatedMemory();
 }

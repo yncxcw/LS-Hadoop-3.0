@@ -196,32 +196,31 @@ public class ContainerScheduler extends AbstractService implements
 
     // This could be killed externally for eg. by the ContainerManager,
     // in which case, the container might still be queued.
-    Container queued =
-        queuedOpportunisticContainers.remove(container.getContainerId());
+  
+    queuedOpportunisticContainers.remove(container.getContainerId());
+    queuedGuaranteedContainers.remove(container.getContainerId());
     
-    //record successful opp containers run time and maximum memory usage
-    //we only
-    if(queued != null){
-    	//we only use container with successful exit state
-        //and container never finished profiling
-    	if(queued.cloneAndGetContainerStatus().getExitStatus() == 0
-    		&& !container.isProfileFinished()){
-         //in mill-seconds		
-    	 long contRuntime = queued.getRunningTime();
-    	 ContainerMetrics contMetrict = ContainerMetrics.getContainerMetrics(queued.getContainerId());
-		 long contMaxPmem = (long)contMetrict.pMemMBsStat.lastStat().max();
-		 //from mb to bytes
-		 contMaxPmem = (contMaxPmem << 20);
-		 utilizationTracker.addProfiledTimeAndPmem(contRuntime, contMaxPmem);
-		 
-    	}
-    }else{
-      queuedGuaranteedContainers.remove(container.getContainerId());
-    }
 
     // decrement only if it was a running container
     Container completedContainer = runningContainers.remove(container
         .getContainerId());
+    
+    //record the profile if it is not recorded during execution
+    if(completedContainer != null){
+    	//we only use container with successful exit state
+        //and container never finished profiling
+    	if(completedContainer.cloneAndGetContainerStatus().getExitStatus() == 0
+    		&& !container.isProfileFinished()){
+         //in mill-seconds		
+    	 long contRuntime = completedContainer.getRunningTime();
+    	 ContainerMetrics contMetrict = ContainerMetrics.
+    			  getContainerMetrics(completedContainer.getContainerId());
+		 long contMaxPmem = (long)contMetrict.pMemMBsStat.lastStat().max();
+		 //from mb to bytes
+		 contMaxPmem = (contMaxPmem << 20);
+		 utilizationTracker.addProfiledTimeAndPmem(contRuntime, contMaxPmem);
+    	}
+	}
    
     if (completedContainer != null) {
       this.utilizationTracker.subtractContainerResource(container);
@@ -234,6 +233,9 @@ public class ContainerScheduler extends AbstractService implements
   }
 
   public void startPendingContainers(boolean launchedByMonitor) {
+	  
+	// Synch estimated memory usage
+	this.utilizationTracker.syncEstimatedMemory();
     // Start pending guaranteed containers, if resources available.
     boolean resourcesAvailable =
         startContainersFromQueue(queuedGuaranteedContainers.values(),launchedByMonitor);
@@ -246,10 +248,22 @@ public class ContainerScheduler extends AbstractService implements
   //based on the pmem usage, kill opp containers.
   //return true if decide to kill
   public boolean tryToKillOppContainers(){
-	long slack = this.utilizationTracker.isCommitmentOverThreshold();
+	long slack = this.utilizationTracker.isCommitmentOverThreshold(0);
 	if(slack < 0){
 		slack=-slack;
-		RandomPickOppConainersToKill(slack);
+		List<Container> extraOpportContainersToKill = 
+				pickOpportunisticContainersToKill(slack);
+		//send kill event
+		for (Container contToKill : extraOpportContainersToKill) {
+		      contToKill.sendKillEvent(
+		          ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER,
+		          "Container Killed to make room for Guaranteed Container.");
+		      oppContainersToKill.put(contToKill.getContainerId(), contToKill);
+		      LOG.info(
+		          "Opportunistic container {} will be killed in order to free resource "
+		          ,contToKill.getContainerId()
+		     );
+		}
 		return true; 
 	}else{
 		
@@ -280,6 +294,9 @@ public class ContainerScheduler extends AbstractService implements
   @VisibleForTesting
   protected void scheduleContainer(Container container) {
     //not supported opportunistic contaienrs
+	// Synch estimated memory usage
+	this.utilizationTracker.syncEstimatedMemory();  
+	
     if (maxOppQueueLength <= 0) {
       LOG.info("opp contianer is not supported");
       startAllocatedContainer(container);
@@ -296,9 +313,13 @@ public class ContainerScheduler extends AbstractService implements
       boolean isQueued = true;
       if (container.getContainerTokenIdentifier().getExecutionType() ==
           ExecutionType.GUARANTEED) {
+    	if(enablePmemLaunch){
+    		//under pmem mode, guaranteed queue should be empty
+    	    assert(queuedGuaranteedContainers.size() == 0);	
+    	}  
         queuedGuaranteedContainers.put(container.getContainerId(), container);
-        // Kill running opportunistic containers to make space for
-        // guaranteed container.
+        //For Pmemlaunch, we will delay the killing to when it is really needed to kill, 
+        //we won't call this function
         killOpportunisticContainers(container);
       } else {
         if (queuedOpportunisticContainers.size() <= maxOppQueueLength) {
@@ -329,8 +350,10 @@ public class ContainerScheduler extends AbstractService implements
   }
 
   private void killOpportunisticContainers(Container container) {
-    List<Container> extraOpportContainersToKill =
+	List<Container> extraOpportContainersToKill;  
+    extraOpportContainersToKill =
         pickOpportunisticContainersToKill(container.getContainerId());
+	
     // Kill the opportunistic containers that were chosen.
     for (Container contToKill : extraOpportContainersToKill) {
       contToKill.sendKillEvent(
@@ -357,7 +380,7 @@ public class ContainerScheduler extends AbstractService implements
 
   
   //kill containers based on physical memory slack
-  private void RandomPickOppConainersToKill(long slack){
+  private List<Container> pickOpportunisticContainersToKill(long slack){
 	  List<Container> extraOpportContainersToKill = new ArrayList<>();
 	  Iterator<Container> lifoIterator = new LinkedList<>(
 		        runningContainers.values()).descendingIterator();
@@ -385,18 +408,8 @@ public class ContainerScheduler extends AbstractService implements
 		}
       }
 	  
-	  //send kill event
-	  for (Container contToKill : extraOpportContainersToKill) {
-	      contToKill.sendKillEvent(
-	          ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER,
-	          "Container Killed to make room for Guaranteed Container.");
-	      oppContainersToKill.put(contToKill.getContainerId(), contToKill);
-	      LOG.info(
-	          "Opportunistic container {} will be killed in order to free resource "
-	          ,contToKill.getContainerId()
-	      );
-	  }
-	  
+	  return extraOpportContainersToKill;
+	   
   }
   private List<Container> pickOpportunisticContainersToKill(
       ContainerId containerToStartId) {

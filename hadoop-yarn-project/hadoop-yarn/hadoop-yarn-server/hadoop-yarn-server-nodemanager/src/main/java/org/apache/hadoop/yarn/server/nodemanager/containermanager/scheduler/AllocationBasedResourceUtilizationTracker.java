@@ -26,6 +26,8 @@ import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainersMonitor;
+import org.apache.hadoop.yarn.util.Clock;
+import org.apache.hadoop.yarn.util.SystemClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.yarn.server.nodemanager.Context;
@@ -47,8 +49,13 @@ public class AllocationBasedResourceUtilizationTracker implements
   private FixedSizeQueue recentOppProfileTime;
   private FixedSizeQueue recentOppProfilePmem;
   
+  private static Clock clock = SystemClock.getInstance();
+  
   //TODO estimated memory usage
-  private long estimiatedMemUsage;
+  private long estimatedMemAvailable;
+  private long estimatedSyncPeriod;
+  private long estimatedMaxSyncPeriod;
+  private long estimatedLastSyncTime;
   
   private ContainerScheduler scheduler;
   private final Context context;
@@ -66,6 +73,14 @@ public class AllocationBasedResourceUtilizationTracker implements
     //we set recent 20 opp container as our reference, make this parameter tunable
     this.recentOppProfileTime = new FixedSizeQueue(20);
     this.recentOppProfilePmem = new FixedSizeQueue(20);
+    //initialize the estimated available
+    this.estimatedMemAvailable= this.context.getNodeResourceMonitor().
+            getAvailableMemory();
+    
+    //TODO make this configurable(ms)
+    this.estimatedSyncPeriod    = 30000;
+    this.estimatedMaxSyncPeriod = 30000;
+    this.estimatedLastSyncTime= clock.getTime();
     
     this.enablePmemLaunch=this.context.getConf().
     		  getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
@@ -146,8 +161,8 @@ public class AllocationBasedResourceUtilizationTracker implements
 		
 			return true;	
 		}
-		//this is a OPP containers
-		return hasResourcesAvailable(pMemBytes);
+		//this is a OPP containers, use average profile
+		return hasResourcesAvailable((long)recentOppProfilePmem.average());
 	}else{
 		return hasResourcesAvailable(pMemBytes,
 	         (long) (getContainersMonitor().getVmemRatio()* pMemBytes),
@@ -158,15 +173,16 @@ public class AllocationBasedResourceUtilizationTracker implements
 
   //what if we only consider realtime physical memory usage
   private boolean hasResourcesAvailable(long pMemBytes){
-	  
-	  long hostAvaiPMem=this.context.getNodeResourceMonitor().getAvailableMemory();
-	  
-	  if(hostAvaiPMem < pMemBytes + pMemThreshold){
+	   
+	  if(estimatedMemAvailable < pMemBytes + pMemThreshold){
 	     
-		 LOG.info("hostAvail: "+hostAvaiPMem+" pMem: "+pMemBytes+"resource is not available");
+		 LOG.info("hostAvail: "+estimatedMemAvailable+" pMem: "+pMemBytes+"resource is not available");
 	     return false;         
 	   }else{
-		 LOG.info("hostAvail: "+hostAvaiPMem+" pMem: "+pMemBytes+"resource is available");  
+		   
+		 LOG.info("hostAvail: "+estimatedMemAvailable+" pMem: "+pMemBytes+"resource is available");  
+		 //update estimated available pmem
+		 estimatedMemAvailable-=pMemBytes;
 		 return true;  
 	   } 
 	  
@@ -224,9 +240,9 @@ public class AllocationBasedResourceUtilizationTracker implements
 
  //return memory slack to instruct to kill containers
 @Override
-public long isCommitmentOverThreshold() {
-	long hostAvaiPMem=this.context.getNodeResourceMonitor().getAvailableMemory();
-	long slack = hostAvaiPMem - this.pMemThreshold;
+public long isCommitmentOverThreshold(long request) {
+	long hostAvaiPmem=this.context.getNodeResourceMonitor().getAvailableMemory();
+	long slack = hostAvaiPmem - (this.pMemThreshold + request);
 	if(slack > 0){
 		return slack;
 	}else{
@@ -243,6 +259,25 @@ public void addProfiledTimeAndPmem(long time, long pmem) {
 	this.recentOppProfileTime.add(time);
 	
 }
+
+//only called when a new container will be launched
+@Override
+public void syncEstimatedMemory() {
+	//check  sync period in terms of ms
+	long now = clock.getTime();
+	if(now - estimatedLastSyncTime > estimatedSyncPeriod){
+		
+		//sync with actual usage
+		this.estimatedMemAvailable= this.context.getNodeResourceMonitor().
+				                     getAvailableMemory();
+		//update sync period
+		this.estimatedSyncPeriod  = Math.min((long)recentOppProfileTime.average(),this.estimatedMaxSyncPeriod);
+	    //record last sync time
+		this.estimatedLastSyncTime= now;
+	}
+	
+}
+
 
 public class FixedSizeQueue{
 		
@@ -297,5 +332,6 @@ public class FixedSizeQueue{
 	  return min;
 	}	
   }
+
 
 }
