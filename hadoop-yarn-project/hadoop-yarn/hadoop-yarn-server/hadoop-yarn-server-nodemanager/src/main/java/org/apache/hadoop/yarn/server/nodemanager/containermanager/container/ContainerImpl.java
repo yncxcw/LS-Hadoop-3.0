@@ -706,6 +706,7 @@ public class ContainerImpl implements Container {
     
     //record finish Time
     this.containerFinishTime = clock.getTime();
+    LOG.info("runtime "+this.containerId+" "+(this.containerFinishTime - this.containerLaunchStartTime));
     
     ContainerStatus containerStatus = cloneAndGetContainerStatus();
     eventHandler.handle(new ApplicationContainerFinishedEvent(containerStatus));
@@ -1814,11 +1815,14 @@ public void profilePmem(long pMem) {
 	  double sdev = Math.sqrt(sumdev/profiledPmem.size());
 	  double coff =sdev/mean;
 	  
+	  //LOG.info("tskmem "+this.containerId+" "+profiledPmem);
+	  
 	  //record this profile point
 	  if(coff < this.profileThreshold){
 		  long current = clock.getTime();
 		  //should be active
 		  long profileTime = current - this.containerLaunchStartTime;
+		  //LOG.info("tskprofile "+this.containerId+" "+profileTime+" "+profiledPmem);
 		  //In bytes
 		  long profilePmem = pMem;
 		  this.context.getContainerManager().

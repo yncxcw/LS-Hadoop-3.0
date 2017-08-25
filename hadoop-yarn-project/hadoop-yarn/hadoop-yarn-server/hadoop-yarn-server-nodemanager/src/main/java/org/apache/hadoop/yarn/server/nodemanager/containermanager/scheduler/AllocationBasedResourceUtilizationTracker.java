@@ -176,11 +176,11 @@ public class AllocationBasedResourceUtilizationTracker implements
 	   
 	  if(estimatedMemAvailable < pMemBytes + pMemThreshold){
 	     
-		 LOG.info("hostAvail: "+estimatedMemAvailable+" pMem: "+pMemBytes+"resource is not available");
+		 LOG.info("estimated: "+estimatedMemAvailable+" pMem: "+pMemBytes+" yes");
 	     return false;         
 	   }else{
 		   
-		 LOG.info("hostAvail: "+estimatedMemAvailable+" pMem: "+pMemBytes+"resource is available");  
+		 LOG.info("estimated: "+estimatedMemAvailable+" pMem: "+pMemBytes+" no");  
 		 //update estimated available pmem
 		 estimatedMemAvailable-=pMemBytes;
 		 return true;  
@@ -255,6 +255,7 @@ public long isCommitmentOverThreshold(long request) {
 @Override
 //time(millseconds) pmem(bytes)
 public void addProfiledTimeAndPmem(long time, long pmem) {
+	LOG.info("profileadd "+time+" "+pmem);
 	this.recentOppProfilePmem.add(pmem);
 	this.recentOppProfileTime.add(time);
 	
@@ -274,6 +275,7 @@ public void syncEstimatedMemory() {
 		this.estimatedSyncPeriod  = Math.min((long)recentOppProfileTime.average(),this.estimatedMaxSyncPeriod);
 	    //record last sync time
 		this.estimatedLastSyncTime= now;
+		LOG.info("profile syn: "+this.estimatedSyncPeriod);
 	}
 	
 }
@@ -292,7 +294,7 @@ public class FixedSizeQueue{
 	}
 	
 	//add element
-	public void add(double e){
+	public synchronized void add(double e){
 		
 		datas.add(e);
 		this.trim();

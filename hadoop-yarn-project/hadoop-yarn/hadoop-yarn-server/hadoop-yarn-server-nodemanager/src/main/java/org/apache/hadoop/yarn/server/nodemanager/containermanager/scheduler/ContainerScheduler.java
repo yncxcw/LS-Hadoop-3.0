@@ -206,7 +206,10 @@ public class ContainerScheduler extends AbstractService implements
         .getContainerId());
     
     //record the profile if it is not recorded during execution
-    if(completedContainer != null){
+    //we only profile opp containers
+    if(completedContainer != null && 
+    		 completedContainer.getContainerTokenIdentifier().getExecutionType() 
+    		 == ExecutionType.OPPORTUNISTIC){
     	//we only use container with successful exit state
         //and container never finished profiling
     	if(completedContainer.cloneAndGetContainerStatus().getExitStatus() == 0
@@ -218,6 +221,7 @@ public class ContainerScheduler extends AbstractService implements
 		 long contMaxPmem = (long)contMetrict.pMemMBsStat.lastStat().max();
 		 //from mb to bytes
 		 contMaxPmem = (contMaxPmem << 20);
+		 LOG.info("nofiniesh "+contRuntime+" "+contMaxPmem);
 		 utilizationTracker.addProfiledTimeAndPmem(contRuntime, contMaxPmem);
     	}
 	}

@@ -28,6 +28,7 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.StringUtils.TraditionalBinaryPrefix;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -43,7 +44,9 @@ import org.apache.hadoop.yarn.server.nodemanager.util.NodeManagerHardwareUtils;
 import org.apache.hadoop.yarn.util.ResourceCalculatorPlugin;
 import org.apache.hadoop.yarn.util.ResourceCalculatorProcessTree;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -401,6 +404,7 @@ public class ContainersMonitorImpl extends AbstractService implements
     public void run() {
 
       while (!stopped && !Thread.currentThread().isInterrupted()) {
+    	//LOG.info("monitor loopin");
         // Print the processTrees for debugging.
         if (LOG.isDebugEnabled()) {
           StringBuilder tmp = new StringBuilder("[ ");
@@ -419,78 +423,38 @@ public class ContainersMonitorImpl extends AbstractService implements
 
         // Now do the monitoring for the trackingContainers
         // Check memory usage and kill any overflowing containers
-        long vmemUsageByAllContainers = 0;
-        long pmemByAllContainers = 0;
-        long cpuUsagePercentPerCoreByAllContainers = 0;
-        long cpuUsageTotalCoresByAllContainers = 0;
+        //long vmemUsageByAllContainers = 0;
+        //long pmemByAllContainers = 0;
+        //long cpuUsagePercentPerCoreByAllContainers = 0;
+        //long cpuUsageTotalCoresByAllContainers = 0;
+        List<Thread> monitorThreads=new ArrayList<Thread>();
         for (Entry<ContainerId, ProcessTreeInfo> entry : trackingContainers
             .entrySet()) {
-          ContainerId containerId = entry.getKey();
-          ProcessTreeInfo ptInfo = entry.getValue();
-          try {
-            String pId = ptInfo.getPID();
-
-            // Initialize uninitialized process trees
-            initializeProcessTrees(entry);
-
-            if (pId == null || !isResourceCalculatorAvailable()) {
-              continue; // processTree cannot be tracked
-            }
-            if (LOG.isDebugEnabled()) {
-              LOG.debug("Constructing ProcessTree for : PID = " + pId
-                  + " ContainerId = " + containerId);
-            }
-            ResourceCalculatorProcessTree pTree = ptInfo.getProcessTree();
-            pTree.updateProcessTree();    // update process-tree
-            long currentVmemUsage = pTree.getVirtualMemorySize();
-            long currentPmemUsage = pTree.getRssMemorySize();
-
-            // if machine has 6 cores and 3 are used,
-            // cpuUsagePercentPerCore should be 300% and
-            // cpuUsageTotalCoresPercentage should be 50%
-            float cpuUsagePercentPerCore = pTree.getCpuUsagePercent();
-            if (cpuUsagePercentPerCore < 0) {
-              // CPU usage is not available likely because the container just
-              // started. Let us skip this turn and consider this container
-              // in the next iteration.
-              LOG.info("Skipping monitoring container " + containerId
-                  + " since CPU usage is not yet available.");
-              continue;
-            }
-
-            recordUsage(containerId, pId, pTree, ptInfo, currentVmemUsage,
-                    currentPmemUsage, trackedContainersUtilization);
-
-            checkLimit(containerId, pId, pTree, ptInfo,
-                    currentVmemUsage, currentPmemUsage);
-
-            // Accounting the total memory in usage for all containers
-            vmemUsageByAllContainers += currentVmemUsage;
-            pmemByAllContainers += currentPmemUsage;
-            // Accounting the total cpu usage for all containers
-            cpuUsagePercentPerCoreByAllContainers += cpuUsagePercentPerCore;
-            cpuUsageTotalCoresByAllContainers += cpuUsagePercentPerCore;
-
-            reportResourceUsage(containerId, currentPmemUsage,
-                    cpuUsagePercentPerCore);
-          } catch (Exception e) {
-            // Log the exception and proceed to the next container.
-            LOG.warn("Uncaught exception in ContainersMonitorImpl "
-                + "while monitoring resource of " + containerId, e);
-          }
+        	Thread monitorThread = new Thread(new Runnable() {
+        	    @Override
+        	    public void run(){
+        	    	monitorByContainer(entry,trackedContainersUtilization);
+        	    }
+        	});
+        	
+        	monitorThread.start();
+        	monitorThreads.add(monitorThread);
+        	
         }
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Total Resource Usage stats in NM by all containers : "
-              + "Virtual Memory= " + vmemUsageByAllContainers
-              + ", Physical Memory= " + pmemByAllContainers
-              + ", Total CPU usage= " + cpuUsageTotalCoresByAllContainers
-              + ", Total CPU(% per core) usage"
-              + cpuUsagePercentPerCoreByAllContainers);
+        
+        //join threads
+        for(Thread t:monitorThreads){
+        	try {
+				t.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
         }
-
+    
         // Save the aggregated utilization of the containers
         setContainersUtilization(trackedContainersUtilization);
-
+        //LOG.info("monitor loopend");
         try {
           Thread.sleep(monitoringInterval);
         } catch (InterruptedException e) {
@@ -501,6 +465,58 @@ public class ContainersMonitorImpl extends AbstractService implements
       }
     }
 
+    
+    void monitorByContainer(Entry<ContainerId, ProcessTreeInfo> entry, 
+    		 ResourceUtilization trackedContainersUtilization){
+    	
+    	ContainerId containerId = entry.getKey();
+        ProcessTreeInfo ptInfo = entry.getValue();
+        try {
+          String pId = ptInfo.getPID();
+
+          // Initialize uninitialized process trees
+          initializeProcessTrees(entry);
+
+          if (pId == null || !isResourceCalculatorAvailable()) {
+            return; // processTree cannot be tracked
+          }
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Constructing ProcessTree for : PID = " + pId
+                + " ContainerId = " + containerId);
+          }
+          ResourceCalculatorProcessTree pTree = ptInfo.getProcessTree();
+          pTree.updateProcessTree();    // update process-tree
+          long currentVmemUsage = pTree.getVirtualMemorySize();
+          long currentPmemUsage = pTree.getRssMemorySize();
+
+          // if machine has 6 cores and 3 are used,
+          // cpuUsagePercentPerCore should be 300% and
+          // cpuUsageTotalCoresPercentage should be 50%
+          float cpuUsagePercentPerCore = pTree.getCpuUsagePercent();
+          if (cpuUsagePercentPerCore < 0) {
+            // CPU usage is not available likely because the container just
+            // started. Let us skip this turn and consider this container
+            // in the next iteration.
+            LOG.info("Skipping monitoring container " + containerId
+                + " since CPU usage is not yet available.");
+            return;
+          }
+
+          recordUsage(containerId, pId, pTree, ptInfo, currentVmemUsage,
+                  currentPmemUsage, trackedContainersUtilization);
+
+          checkLimit(containerId, pId, pTree, ptInfo,
+                  currentVmemUsage, currentPmemUsage);
+
+          reportResourceUsage(containerId, currentPmemUsage,
+                  cpuUsagePercentPerCore);
+        } catch (Exception e) {
+          // Log the exception and proceed to the next container.
+          LOG.warn("Uncaught exception in ContainersMonitorImpl "
+              + "while monitoring resource of " + containerId, e);
+        }
+    	
+    }
     /**
      * Initialize any uninitialized processTrees.
      * @param entry process tree entry to fill in
@@ -590,12 +606,13 @@ public class ContainersMonitorImpl extends AbstractService implements
                       currentPmemUsage, pmemLimit));
       }
 
+      synchronized(this){
       // Add resource utilization for this container
       trackedContainersUtilization.addTo(
               (int) (currentPmemUsage >> 20),
               (int) (currentVmemUsage >> 20),
               milliVcoresUsed / 1000.0f);
-
+      }
       // Add usage to container metrics
       if (containerMetricsEnabled) {
         ContainerMetrics.forContainer(
@@ -603,9 +620,14 @@ public class ContainersMonitorImpl extends AbstractService implements
                 containerMetricsUnregisterDelayMs).recordMemoryUsage(
                 (int) (currentPmemUsage >> 20));
        //physical memory 
-       LOG.info(" "+containerId+" pm "+ (int)(currentPmemUsage >> 20));
+       //LOG.info(" "+containerId+" pm "+ (int)(currentPmemUsage >> 20));
        Container container = context.getContainers().get(containerId);
+       //only profile opp container
+       if(container.getContainerTokenIdentifier().getExecutionType() 
+    		   == ExecutionType.OPPORTUNISTIC)
+       {
        container.profilePmem(currentPmemUsage);
+       }
        //metrics
        //LOG.info(ContainerMetrics.getContainerMetrics(containerId).pMemMBsStat.toString());
         ContainerMetrics.forContainer(
