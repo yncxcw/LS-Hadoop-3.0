@@ -257,6 +257,7 @@ public class ContainerScheduler extends AbstractService implements
 		slack=-slack;
 		List<Container> extraOpportContainersToKill = 
 				pickOpportunisticContainersToKill(slack);
+		LOG.info("kill size "+extraOpportContainersToKill.size());
 		//send kill event
 		for (Container contToKill : extraOpportContainersToKill) {
 		      contToKill.sendKillEvent(
@@ -278,6 +279,7 @@ public class ContainerScheduler extends AbstractService implements
   private boolean startContainersFromQueue(
       Collection<Container> queuedContainers,
       boolean launchedByMonitor) {
+	int launchSize=0;
     Iterator<Container> cIter = queuedContainers.iterator();
     boolean resourcesAvailable = true;
     while (cIter.hasNext() && resourcesAvailable) {
@@ -288,10 +290,12 @@ public class ContainerScheduler extends AbstractService implements
     	}  
         startAllocatedContainer(container);
         cIter.remove();
+        launchSize++;
       } else {
         resourcesAvailable = false;
       }
     }
+    LOG.info("launch size "+launchSize);
     return resourcesAvailable;
   }
 
@@ -395,6 +399,7 @@ public class ContainerScheduler extends AbstractService implements
 
 	        if (oppContainersToKill.containsKey(
 		             runningCont.getContainerId())) {
+	        	  LOG.info("skip "+runningCont.getContainerId());
 		          // These containers have already been marked to be killed.
 		          // So exclude them..
 		          continue;
@@ -406,6 +411,7 @@ public class ContainerScheduler extends AbstractService implements
 		    //from mb to bytes
 		    contPmem = (contPmem  << 20);
 		    //update slack
+		    LOG.info("kill "+runningCont.getContainerId()+" release "+contPmem);
 		    slack -= contPmem;
 		    //numToKill--;
 		       

@@ -441,7 +441,6 @@ public class ContainersMonitorImpl extends AbstractService implements
         	monitorThreads.add(monitorThread);
         	
         }
-        
         //join threads
         for(Thread t:monitorThreads){
         	try {
@@ -451,7 +450,6 @@ public class ContainersMonitorImpl extends AbstractService implements
 				e.printStackTrace();
 			}
         }
-    
         // Save the aggregated utilization of the containers
         setContainersUtilization(trackedContainersUtilization);
         //LOG.info("monitor loopend");

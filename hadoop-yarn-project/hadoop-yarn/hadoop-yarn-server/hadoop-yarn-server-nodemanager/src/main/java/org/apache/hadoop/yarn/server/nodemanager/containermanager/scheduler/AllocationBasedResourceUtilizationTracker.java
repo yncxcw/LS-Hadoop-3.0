@@ -59,7 +59,7 @@ public class AllocationBasedResourceUtilizationTracker implements
   
   private ContainerScheduler scheduler;
   private final Context context;
-  private final long pMemThreshold;
+  private long pMemThreshold;
   private boolean enablePmemLaunch;
 
   AllocationBasedResourceUtilizationTracker(ContainerScheduler scheduler,Context context) {
@@ -69,7 +69,8 @@ public class AllocationBasedResourceUtilizationTracker implements
     this.scheduler = scheduler;
     this.context=context;
     //current it is 5GB
-    this.pMemThreshold=(5<<30);
+    this.pMemThreshold= 5L<<30;
+    LOG.info("threashold: "+this.pMemThreshold);
     //we set recent 20 opp container as our reference, make this parameter tunable
     this.recentOppProfileTime = new FixedSizeQueue(20);
     this.recentOppProfilePmem = new FixedSizeQueue(20);
@@ -173,14 +174,16 @@ public class AllocationBasedResourceUtilizationTracker implements
 
   //what if we only consider realtime physical memory usage
   private boolean hasResourcesAvailable(long pMemBytes){
+	  
+	  LOG.info("threashold: "+this.pMemThreshold);
 	   
 	  if(estimatedMemAvailable < pMemBytes + pMemThreshold){
 	     
-		 LOG.info("estimated: "+estimatedMemAvailable+" pMem: "+pMemBytes+" yes");
+		 LOG.info("estimated: "+estimatedMemAvailable+" pMem: "+pMemBytes+" no");
 	     return false;         
 	   }else{
 		   
-		 LOG.info("estimated: "+estimatedMemAvailable+" pMem: "+pMemBytes+" no");  
+		 LOG.info("estimated: "+estimatedMemAvailable+" pMem: "+pMemBytes+" yes");  
 		 //update estimated available pmem
 		 estimatedMemAvailable-=pMemBytes;
 		 return true;  
@@ -242,6 +245,7 @@ public class AllocationBasedResourceUtilizationTracker implements
 @Override
 public long isCommitmentOverThreshold(long request) {
 	long hostAvaiPmem=this.context.getNodeResourceMonitor().getAvailableMemory();
+	LOG.info("threashold: "+this.pMemThreshold);
 	long slack = hostAvaiPmem - (this.pMemThreshold + request);
 	if(slack > 0){
 		return slack;
