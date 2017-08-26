@@ -75,7 +75,7 @@ public class TestNMSimulator {
     ContainerId cId1 = newContainerId(1, 1, 1);
     Container container1 = Container.newInstance(cId1, null, null,
         Resources.createResource(GB, 1), null, null);
-    node1.addNewContainer(container1, 100000l);
+    node1.addNewContainer(container1, 100000l, null, null, null);
     Assert.assertTrue("Node1 should have one running container.",
         node1.getRunningContainers().containsKey(cId1));
 
@@ -83,7 +83,7 @@ public class TestNMSimulator {
     ContainerId cId2 = newContainerId(2, 1, 1);
     Container container2 = Container.newInstance(cId2, null, null,
         Resources.createResource(GB, 1), null, null);
-    node1.addNewContainer(container2, -1l);
+    node1.addNewContainer(container2, -1l, null, null, null);
     Assert.assertTrue("Node1 should have one running AM container",
         node1.getAMContainers().contains(cId2));
 

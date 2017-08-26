@@ -230,4 +230,22 @@ public class MockContainer implements Container {
   public void sendKillEvent(int exitStatus, String description) {
 
   }
+
+@Override
+public long getRunningTime() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
+@Override
+public void profilePmem(long Pmem) {
+	// TODO Auto-generated method stub
+	
+}
+
+@Override
+public boolean isProfileFinished() {
+	// TODO Auto-generated method stub
+	return false;
+}
 }

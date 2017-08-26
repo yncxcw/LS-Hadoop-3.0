@@ -79,8 +79,8 @@ public class AllocationBasedResourceUtilizationTracker implements
             getAvailableMemory();
     
     //TODO make this configurable(ms)
-    this.estimatedSyncPeriod    = 30000;
-    this.estimatedMaxSyncPeriod = 30000;
+    this.estimatedSyncPeriod    = 10000;
+    this.estimatedMaxSyncPeriod = 10000;
     this.estimatedLastSyncTime= clock.getTime();
     
     this.enablePmemLaunch=this.context.getConf().
@@ -250,7 +250,7 @@ public long isCommitmentOverThreshold(long request) {
 	if(slack > 0){
 		return slack;
 	}else{
-		LOG.info("memory overcommitment: kill containers slack: "+slack);
+		LOG.info("memory slack "+slack+" avail "+hostAvaiPmem);
 		return slack;
 
 	}

@@ -241,6 +241,7 @@ public class ContainerScheduler extends AbstractService implements
 	// Synch estimated memory usage
 	this.utilizationTracker.syncEstimatedMemory();
     // Start pending guaranteed containers, if resources available.
+	LOG.info("gua size "+queuedGuaranteedContainers.size()+" opp size "+queuedOpportunisticContainers.size());
     boolean resourcesAvailable =
         startContainersFromQueue(queuedGuaranteedContainers.values(),launchedByMonitor);
     // Start opportunistic containers, if resources available.

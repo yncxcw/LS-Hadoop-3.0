@@ -30,6 +30,6 @@ public class TestNodeResourceMonitor extends BaseContainerManagerTest {
 
   @Test
   public void testNodeResourceMonitor() {
-    NodeResourceMonitor nrm = new NodeResourceMonitorImpl();
+    NodeResourceMonitor nrm = new NodeResourceMonitorImpl(context);
   }
 }
