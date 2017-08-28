@@ -157,6 +157,7 @@ public class ContainerImpl implements Container {
   private long containerLocalizationStartTime;
   private long containerLaunchStartTime;
   private long containerFinishTime;
+  private long containerKillingTime;
   
   private ContainerMetrics containerMetrics;
   private static Clock clock = SystemClock.getInstance();
@@ -217,6 +218,7 @@ public class ContainerImpl implements Container {
     this.profileFinished=false;
     this.profiledPmem=new LinkedList<Long>();
     this.containerFinishTime=-1;
+    this.containerKillingTime = -1;
     boolean containerMetricsEnabled =
         conf.getBoolean(YarnConfiguration.NM_CONTAINER_METRICS_ENABLE,
             YarnConfiguration.DEFAULT_NM_CONTAINER_METRICS_ENABLE);
@@ -746,6 +748,7 @@ public class ContainerImpl implements Container {
   @SuppressWarnings("unchecked") // dispatcher not typed
   @Override
   public void sendKillEvent(int exitStatus, String description) {
+	this.containerKillingTime=clock.getTime();
     this.isMarkeForKilling = true;
     dispatcher.getEventHandler().handle(
         new ContainerKillEvent(containerId, exitStatus, description));
@@ -1838,5 +1841,11 @@ public void profilePmem(long pMem) {
 public boolean isProfileFinished() {
 	
 	return this.profileFinished;
+}
+
+@Override
+public long getKillingTime() {
+	
+	return this.containerKillingTime;
 }
 }

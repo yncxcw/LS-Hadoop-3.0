@@ -36,6 +36,8 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.Contai
 
 
 import org.apache.hadoop.yarn.server.nodemanager.metrics.NodeManagerMetrics;
+import org.apache.hadoop.yarn.util.Clock;
+import org.apache.hadoop.yarn.util.SystemClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,8 @@ public class ContainerScheduler extends AbstractService implements
   private final int maxOppQueueLength;
   
   private boolean enablePmemLaunch;
+  
+  private static Clock clock = SystemClock.getInstance();
 
   // Queue of Guaranteed Containers waiting for resources to run
   private final LinkedHashMap<ContainerId, Container>
@@ -192,7 +196,12 @@ public class ContainerScheduler extends AbstractService implements
   }
 
   private void onContainerCompleted(Container container) {
-    oppContainersToKill.remove(container.getContainerId());
+    Container killedContainer= oppContainersToKill.remove(container.getContainerId());
+    if(killedContainer != null)
+    {
+      long duration = clock.getTime() - killedContainer.getKillingTime();
+      LOG.info("kill "+killedContainer.getContainerId()+" time " + duration);
+    }
 
     // This could be killed externally for eg. by the ContainerManager,
     // in which case, the container might still be queued.
@@ -393,6 +402,9 @@ public class ContainerScheduler extends AbstractService implements
 	  List<Container> extraOpportContainersToKill = new ArrayList<>();
 	  Iterator<Container> lifoIterator = new LinkedList<>(
 		        runningContainers.values()).descendingIterator();
+	  LOG.info("total size "+runningContainers.size());
+	  int excludeSize=0;
+	  int guaSize=0;
 	  while(lifoIterator.hasNext() && slack > 0) {
 		      Container runningCont = lifoIterator.next();
 	    if (runningCont.getContainerTokenIdentifier().getExecutionType() ==
@@ -403,6 +415,7 @@ public class ContainerScheduler extends AbstractService implements
 	        	  LOG.info("skip "+runningCont.getContainerId());
 		          // These containers have already been marked to be killed.
 		          // So exclude them..
+	        	  excludeSize++;
 		          continue;
 		    }
 		    extraOpportContainersToKill.add(runningCont);
@@ -416,9 +429,12 @@ public class ContainerScheduler extends AbstractService implements
 		    slack -= contPmem;
 		    //numToKill--;
 		       
+		}else{
+		  guaSize++;	
 		}
       }
-	  
+	  LOG.info("exclude size "+excludeSize);
+	  LOG.info("gua Size "+guaSize);
 	  return extraOpportContainersToKill;
 	   
   }

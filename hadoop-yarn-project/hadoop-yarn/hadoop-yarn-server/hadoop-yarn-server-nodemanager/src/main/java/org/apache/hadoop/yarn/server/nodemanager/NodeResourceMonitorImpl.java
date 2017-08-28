@@ -69,10 +69,12 @@ public class NodeResourceMonitorImpl extends AbstractService implements
    */
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
-    this.monitoringInterval =
+    //TODO bug to read interval
+	this.monitoringInterval =
         conf.getLong(YarnConfiguration.NM_RESOURCE_MON_INTERVAL_MS,
             YarnConfiguration.DEFAULT_NM_RESOURCE_MON_INTERVAL_MS);
-    
+    LOG.info("monitor interval1: "+monitoringInterval);	
+    this.monitoringInterval = 500;
     this.enablePmemLaunch =
     	conf.getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
     		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
@@ -146,6 +148,7 @@ public class NodeResourceMonitorImpl extends AbstractService implements
      */
     @Override
     public void run() {
+    		
       while (true) {
        
       //if pmem launch is enabled, then periodically check the resource availability
@@ -167,7 +170,7 @@ public class NodeResourceMonitorImpl extends AbstractService implements
           containerScheduler.startPendingContainers(true);
          }
        }  
-    	  
+        
         // Get node utilization and save it into the health status
         long pmem = resourceCalculatorPlugin.getPhysicalMemorySize() -
             resourceCalculatorPlugin.getAvailablePhysicalMemorySize();

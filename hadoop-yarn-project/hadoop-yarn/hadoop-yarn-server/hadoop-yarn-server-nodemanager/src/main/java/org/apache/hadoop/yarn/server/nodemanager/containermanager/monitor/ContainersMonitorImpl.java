@@ -121,8 +121,7 @@ public class ContainersMonitorImpl extends AbstractService implements
     this.conf = myConf;
     this.monitoringInterval =
         this.conf.getLong(YarnConfiguration.NM_CONTAINER_MON_INTERVAL_MS,
-            this.conf.getLong(YarnConfiguration.NM_RESOURCE_MON_INTERVAL_MS,
-                YarnConfiguration.DEFAULT_NM_RESOURCE_MON_INTERVAL_MS));
+                YarnConfiguration.DEFAULT_NM_RESOURCE_MON_INTERVAL_MS);
 
     this.resourceCalculatorPlugin =
         ResourceCalculatorPlugin.getContainersMonitorPlugin(this.conf);

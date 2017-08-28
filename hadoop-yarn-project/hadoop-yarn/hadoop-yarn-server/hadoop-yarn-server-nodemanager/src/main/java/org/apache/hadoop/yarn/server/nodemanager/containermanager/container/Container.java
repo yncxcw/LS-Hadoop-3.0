@@ -95,6 +95,8 @@ public interface Container extends EventHandler<ContainerEvent> {
   
   long getRunningTime();
   
+  long getKillingTime();
+  
   void profilePmem(long Pmem);
   
   boolean isProfileFinished();
