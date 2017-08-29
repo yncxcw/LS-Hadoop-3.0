@@ -160,10 +160,18 @@ public class AllocationBasedResourceUtilizationTracker implements
 		//no matter what, launch GUA containers 
 		if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.GUARANTEED){
 		
+			LOG.info("has launch gua container "+container.getContainerId());
 			return true;	
 		}
+		long averageProfile;
+		if((long)recentOppProfilePmem.average() > 0){
+			averageProfile = (long)recentOppProfilePmem.average();
+		}else{
+			averageProfile = pMemBytes;	
+		}
+		LOG.info(container.getContainerId()+" average "+averageProfile);
 		//this is a OPP containers, use average profile
-		return hasResourcesAvailable((long)recentOppProfilePmem.average());
+		return hasResourcesAvailable(averageProfile);
 	}else{
 		return hasResourcesAvailable(pMemBytes,
 	         (long) (getContainersMonitor().getVmemRatio()* pMemBytes),
@@ -312,6 +320,9 @@ public class FixedSizeQueue{
 	}
 	
 	public double average(){
+	  if(datas.size() == 0){
+			  return 0.0;
+	  }
 	  double sum=0;
 	  for(double e : datas){
 		  sum += e;
@@ -321,6 +332,9 @@ public class FixedSizeQueue{
 	}
 	
 	public double max(){
+	  if(datas.size() == 0){
+		  return 0.0;
+	  }	
 	  double max=Double.MIN_VALUE;
 	  for(double e : datas){
 		  if(e > max)

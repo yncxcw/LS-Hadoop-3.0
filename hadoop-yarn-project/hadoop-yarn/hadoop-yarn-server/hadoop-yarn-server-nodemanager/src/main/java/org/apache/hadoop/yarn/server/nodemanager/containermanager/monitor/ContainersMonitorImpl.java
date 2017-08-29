@@ -618,13 +618,6 @@ public class ContainersMonitorImpl extends AbstractService implements
                 (int) (currentPmemUsage >> 20));
        //physical memory 
        //LOG.info(" "+containerId+" pm "+ (int)(currentPmemUsage >> 20));
-       Container container = context.getContainers().get(containerId);
-       //only profile opp container
-       if(container.getContainerTokenIdentifier().getExecutionType() 
-    		   == ExecutionType.OPPORTUNISTIC)
-       {
-       container.profilePmem(currentPmemUsage);
-       }
        //metrics
        //LOG.info(ContainerMetrics.getContainerMetrics(containerId).pMemMBsStat.toString());
         ContainerMetrics.forContainer(

@@ -50,6 +50,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * The ContainerScheduler manages a collection of runnable containers. It
@@ -69,26 +73,25 @@ public class ContainerScheduler extends AbstractService implements
   private boolean enablePmemLaunch;
   
   private static Clock clock = SystemClock.getInstance();
-
   // Queue of Guaranteed Containers waiting for resources to run
-  private final LinkedHashMap<ContainerId, Container>
-      queuedGuaranteedContainers = new LinkedHashMap<>();
+  private final Map<ContainerId, Container>
+      queuedGuaranteedContainers = new ConcurrentHashMap<>();
   // Queue of Opportunistic Containers waiting for resources to run
-  private final LinkedHashMap<ContainerId, Container>
-      queuedOpportunisticContainers = new LinkedHashMap<>();
+  private final Map<ContainerId, Container>
+      queuedOpportunisticContainers = new ConcurrentHashMap<>();
 
   // Used to keep track of containers that have been marked to be killed
   // to make room for a guaranteed container.
   private final Map<ContainerId, Container> oppContainersToKill =
-      new HashMap<>();
+      new ConcurrentHashMap<>();
 
   // Containers launched by the Scheduler will take a while to actually
   // move to the RUNNING state, but should still be fair game for killing
   // by the scheduler to make room for guaranteed containers. This holds
   // containers that are in RUNNING as well as those in SCHEDULED state that
   // have been marked to run, but not yet RUNNING.
-  private final LinkedHashMap<ContainerId, Container> runningContainers =
-      new LinkedHashMap<>();
+  private final Map<ContainerId, Container> runningContainers =
+      new ConcurrentHashMap<>();
 
   private final ContainerQueuingLimit queuingLimit =
       ContainerQueuingLimit.newInstance();
@@ -120,6 +123,9 @@ public class ContainerScheduler extends AbstractService implements
     this.enablePmemLaunch =
         	context.getConf().getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
         		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
+    
+    
+ 
   }
 
   @VisibleForTesting
@@ -134,6 +140,7 @@ public class ContainerScheduler extends AbstractService implements
         new AllocationBasedResourceUtilizationTracker(this,context);
     this.opportunisticContainersStatus =
         OpportunisticContainersStatus.newInstance();
+
   }
 
   /**
@@ -163,22 +170,30 @@ public class ContainerScheduler extends AbstractService implements
    * @return Number of queued containers.
    */
   public int getNumQueuedContainers() {
+	
     return this.queuedGuaranteedContainers.size()
         + this.queuedOpportunisticContainers.size();
+	
   }
 
   @VisibleForTesting
   public int getNumQueuedGuaranteedContainers() {
+
     return this.queuedGuaranteedContainers.size();
+
   }
   
   public int getRunningContainers() {
-	return this.runningContainers.size();  
+	
+	return this.runningContainers.size();
+	
   }
 
   @VisibleForTesting
   public int getNumQueuedOpportunisticContainers() {
+	
     return this.queuedOpportunisticContainers.size();
+	
   }
 
   public OpportunisticContainersStatus getOpportunisticContainersStatus() {
@@ -196,16 +211,15 @@ public class ContainerScheduler extends AbstractService implements
   }
 
   private void onContainerCompleted(Container container) {
+ 
     Container killedContainer= oppContainersToKill.remove(container.getContainerId());
     if(killedContainer != null)
     {
       long duration = clock.getTime() - killedContainer.getKillingTime();
       LOG.info("kill "+killedContainer.getContainerId()+" time " + duration);
     }
-
     // This could be killed externally for eg. by the ContainerManager,
     // in which case, the container might still be queued.
-  
     queuedOpportunisticContainers.remove(container.getContainerId());
     queuedGuaranteedContainers.remove(container.getContainerId());
     
@@ -230,7 +244,7 @@ public class ContainerScheduler extends AbstractService implements
 		 long contMaxPmem = (long)contMetrict.pMemMBsStat.lastStat().max();
 		 //from mb to bytes
 		 contMaxPmem = (contMaxPmem << 20);
-		 LOG.info("nofiniesh "+contRuntime+" "+contMaxPmem);
+		 LOG.info("nofinish "+contRuntime+" "+contMaxPmem);
 		 utilizationTracker.addProfiledTimeAndPmem(contRuntime, contMaxPmem);
     	}
 	}
@@ -309,61 +323,99 @@ public class ContainerScheduler extends AbstractService implements
     return resourcesAvailable;
   }
 
+  protected void scheduleContainerForDefault(Container container){
+	  if (queuedGuaranteedContainers.isEmpty() &&
+		        queuedOpportunisticContainers.isEmpty() &&
+		        this.utilizationTracker.hasResourcesAvailable(container)) {
+		      startAllocatedContainer(container);
+	 } else {
+		      LOG.info("No available resources for container {} to start its execution "
+		          + "immediately.", container.getContainerId()+" type: "+ container.getContainerTokenIdentifier().getExecutionType());
+		      boolean isQueued = true;
+		      if (container.getContainerTokenIdentifier().getExecutionType() ==
+		          ExecutionType.GUARANTEED) { 
+		        queuedGuaranteedContainers.put(container.getContainerId(), container);
+		        killOpportunisticContainers(container);
+		      } else {
+		        if (queuedOpportunisticContainers.size() <= maxOppQueueLength) {
+		          LOG.info("Opportunistic container {} will be queued at the NM.",
+		              container.getContainerId());
+		          queuedOpportunisticContainers.put(
+		              container.getContainerId(), container);
+		        } else {
+		          isQueued = false;
+		          LOG.info("Opportunistic container [{}] will not be queued at the NM" +
+		              "since max queue length [{}] has been reached",
+		              container.getContainerId(), maxOppQueueLength);
+		          container.sendKillEvent(
+		              ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER,
+		              "Opportunistic container queue is full.");
+		        }
+		      }
+		      if (isQueued) {
+		        try {
+		          this.context.getNMStateStore().storeContainerQueued(
+		              container.getContainerId());
+		        } catch (IOException e) {
+		          LOG.warn("Could not store container [" + container.getContainerId()
+		              + "] state. The Container has been queued.", e);
+		        }
+		      }
+		 }
+	  
+  }
+  protected void scheduleContainerForPMLaunch(Container container){
+	//for GUA, launch anyway
+  	if(container.getContainerTokenIdentifier().getExecutionType() ==
+  	          ExecutionType.GUARANTEED){
+  	  //we will not queue gua containers	
+  	  assert(this.queuedGuaranteedContainers.size() == 0);	
+  	  startAllocatedContainer(container);	
+  	}else{
+  		
+  	    if(queuedOpportunisticContainers.isEmpty() &&
+  		        this.utilizationTracker.hasResourcesAvailable(container)){
+  			startAllocatedContainer(container);
+  		    LOG.info("enough resource, launch container "+container.getContainerId()+" type: "+container.getContainerTokenIdentifier().getExecutionType());
+  		}else{
+  		   
+  			LOG.info("No available resources for container {} to start its execution "
+  			          + "immediately.", container.getContainerId()+" type: "+ container.getContainerTokenIdentifier().getExecutionType());
+  		
+  			if (queuedOpportunisticContainers.size() <= maxOppQueueLength) {
+  		          LOG.info("Opportunistic container {} will be queued at the NM.",
+  		              container.getContainerId());
+  		          queuedOpportunisticContainers.put(
+  		              container.getContainerId(), container);
+  		    } else {
+  		          LOG.info("Opportunistic container [{}] will not be queued at the NM" +
+  		              "since max queue length [{}] has been reached",
+  		              container.getContainerId(), maxOppQueueLength);
+  		          container.sendKillEvent(
+  		              ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER,
+  		              "Opportunistic container queue is full.");
+  		   }
+  		}
+  }  
+	  
+}
+  
   @VisibleForTesting
   protected void scheduleContainer(Container container) {
     //not supported opportunistic contaienrs
 	// Synch estimated memory usage
 	this.utilizationTracker.syncEstimatedMemory();  
-	
+	//default case without opp containers
     if (maxOppQueueLength <= 0) {
       LOG.info("opp contianer is not supported");
       startAllocatedContainer(container);
       return;
     }
-    if (queuedGuaranteedContainers.isEmpty() &&
-        queuedOpportunisticContainers.isEmpty() &&
-        this.utilizationTracker.hasResourcesAvailable(container)) {
-      startAllocatedContainer(container);
-      LOG.info("enough resource, launch container "+container.getContainerId()+" type: "+container.getContainerTokenIdentifier().getExecutionType());
-    } else {
-      LOG.info("No available resources for container {} to start its execution "
-          + "immediately.", container.getContainerId());
-      boolean isQueued = true;
-      if (container.getContainerTokenIdentifier().getExecutionType() ==
-          ExecutionType.GUARANTEED) {
-    	if(enablePmemLaunch){
-    		//under pmem mode, guaranteed queue should be empty
-    	    assert(queuedGuaranteedContainers.size() == 0);	
-    	}  
-        queuedGuaranteedContainers.put(container.getContainerId(), container);
-        //For Pmemlaunch, we will delay the killing to when it is really needed to kill, 
-        //we won't call this function
-        killOpportunisticContainers(container);
-      } else {
-        if (queuedOpportunisticContainers.size() <= maxOppQueueLength) {
-          LOG.info("Opportunistic container {} will be queued at the NM.",
-              container.getContainerId());
-          queuedOpportunisticContainers.put(
-              container.getContainerId(), container);
-        } else {
-          isQueued = false;
-          LOG.info("Opportunistic container [{}] will not be queued at the NM" +
-              "since max queue length [{}] has been reached",
-              container.getContainerId(), maxOppQueueLength);
-          container.sendKillEvent(
-              ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER,
-              "Opportunistic container queue is full.");
-        }
-      }
-      if (isQueued) {
-        try {
-          this.context.getNMStateStore().storeContainerQueued(
-              container.getContainerId());
-        } catch (IOException e) {
-          LOG.warn("Could not store container [" + container.getContainerId()
-              + "] state. The Container has been queued.", e);
-        }
-      }
+    //rewrite launch logic, could introduce bugs
+    if(enablePmemLaunch){
+    	this.scheduleContainerForPMLaunch(container);
+    }else{
+    	this.scheduleContainerForDefault(container);
     }
   }
 

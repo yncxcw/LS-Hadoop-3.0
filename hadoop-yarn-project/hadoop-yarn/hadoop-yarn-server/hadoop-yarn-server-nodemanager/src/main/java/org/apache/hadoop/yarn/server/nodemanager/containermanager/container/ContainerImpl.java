@@ -1828,9 +1828,6 @@ public void profilePmem(long pMem) {
 		  //LOG.info("tskprofile "+this.containerId+" "+profileTime+" "+profiledPmem);
 		  //In bytes
 		  long profilePmem = pMem;
-		  this.context.getContainerManager().
-		    getContainerScheduler().getUtilizationTracker().
-		     addProfiledTimeAndPmem(profileTime, profilePmem);
 		  this.profileFinished=true;
 	  }
 	 
