@@ -269,27 +269,6 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     LOG.debug("Registered source "+ name);
   }
 
-  @Override public synchronized <T extends MetricsSink>
-  T register(final String name, final String description, final T sink) {
-    LOG.debug(name +", "+ description);
-    if (allSinks.containsKey(name)) {
-      LOG.warn("Sink "+ name +" already exists!");
-      return sink;
-    }
-    allSinks.put(name, sink);
-    if (config != null) {
-      registerSink(name, description, sink);
-    }
-    // We want to re-register the sink to pick up new config
-    // when the metrics system restarts.
-    register(name, new AbstractCallback() {
-      @Override public void postStart() {
-        register(name, description, sink);
-      }
-    });
-    return sink;
-  }
-
   synchronized void registerSink(String name, String desc, MetricsSink sink) {
     checkNotNull(config, "config");
     MetricsConfig conf = sinkConfigs.get(name);

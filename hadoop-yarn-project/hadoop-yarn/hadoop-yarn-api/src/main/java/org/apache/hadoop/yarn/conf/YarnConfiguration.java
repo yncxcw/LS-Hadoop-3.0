@@ -1248,8 +1248,14 @@ public class YarnConfiguration extends Configuration {
 
   public static final String NM_ENABLE_PMEM_LAUNCH=
 	  NM_PREFIX+"pmem.launch.enabled";
-  
+ 
   public static final boolean DEFAULT_NM_ENABLE_PMEM_LAUNCH = false;
+ 
+  public static final long DEFAULT_NM_PMEM_MARGIN=
+	  5L << 30;
+  
+  public static final String NM_PMEM_MARGIN=
+	  NM_PREFIX+"pmem.margin";	  
   
   /** How often to monitor resource in a node.*/
   public static final String NM_RESOURCE_MON_INTERVAL_MS =

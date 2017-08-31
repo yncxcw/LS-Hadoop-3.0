@@ -138,8 +138,8 @@ public class TestGangliaMetrics {
     GangliaMetricsTestHelper.setDatagramSocket(gsink31, mockds31);
 
     // register the sinks
-    ms.register("gsink30", "gsink30 desc", gsink30);
-    ms.register("gsink31", "gsink31 desc", gsink31);
+    //ms.register("gsink30", "gsink30 desc", gsink30);
+    //ms.register("gsink31", "gsink31 desc", gsink31);
     ms.publishMetricsNow(); // publish the metrics
 
     ms.stop();

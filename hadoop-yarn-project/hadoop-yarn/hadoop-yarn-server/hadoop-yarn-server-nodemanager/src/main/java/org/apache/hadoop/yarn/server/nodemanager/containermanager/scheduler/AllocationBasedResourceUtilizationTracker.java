@@ -68,8 +68,7 @@ public class AllocationBasedResourceUtilizationTracker implements
     this.GuaContainersAllocation = ResourceUtilization.newInstance(0, 0, 0.0f);
     this.scheduler = scheduler;
     this.context=context;
-    //current it is 5GB
-    this.pMemThreshold= 5L<<30;
+  
     LOG.info("threashold: "+this.pMemThreshold);
     //we set recent 20 opp container as our reference, make this parameter tunable
     this.recentOppProfileTime = new FixedSizeQueue(20);
@@ -86,6 +85,12 @@ public class AllocationBasedResourceUtilizationTracker implements
     this.enablePmemLaunch=this.context.getConf().
     		  getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
     		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
+    //current it is 5GB
+    this.pMemThreshold= this.context.getConf().getLong(
+    		     YarnConfiguration.NM_PMEM_MARGIN, 
+    		YarnConfiguration.DEFAULT_NM_PMEM_MARGIN);
+    		
+    		
   
   }
 
