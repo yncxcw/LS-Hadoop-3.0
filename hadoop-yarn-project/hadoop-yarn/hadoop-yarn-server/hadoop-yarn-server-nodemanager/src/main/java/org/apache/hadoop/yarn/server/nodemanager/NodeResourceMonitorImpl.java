@@ -201,12 +201,12 @@ public class NodeResourceMonitorImpl extends AbstractService implements
                 (int) (vmem >> 20), // B -> MB
                 vcores); // Used Virtual Cores
         		
-        LOG.info("nodemonitor nodeavail: "+nodeAvailableMemory+
-        		              " usedswap: "+usedSwap+
-        		              " inacanon: "+inactiveAnon+
-        		              " inacfile: "+inactiveFile+
-        		              " cachemem: "+cachedMem
-        		);
+        //LOG.info("nodemonitor nodeavail: "+nodeAvailableMemory+
+        //		              " usedswap: "+usedSwap+
+        //		              " inacanon: "+inactiveAnon+
+        //		              " inacfile: "+inactiveFile+
+        //		              " cachemem: "+cachedMem
+        //		);
         try {
           Thread.sleep(monitoringInterval);
         } catch (InterruptedException e) {
