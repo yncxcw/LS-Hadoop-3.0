@@ -248,4 +248,10 @@ public boolean isProfileFinished() {
 	// TODO Auto-generated method stub
 	return false;
 }
+
+@Override
+public long getKillingTime() {
+	// TODO Auto-generated method stub
+	return 0;
+}
 }
