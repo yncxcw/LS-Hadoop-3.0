@@ -876,6 +876,9 @@ public class ContainerImpl implements Container {
 
       // Send requests for public, private resources
       Map<String,LocalResource> cntrRsrc = ctxt.getLocalResources();
+      for(Map.Entry<String,LocalResource> entry: cntrRsrc.entrySet()){
+    	  LOG.info("localizing resource: "+entry.getKey()+" url: "+entry.getValue().getResource());
+      }
       if (!cntrRsrc.isEmpty()) {
         try {
           Map<LocalResourceVisibility, Collection<LocalResourceRequest>> req =
