@@ -109,6 +109,9 @@ public abstract class AMSimulator extends TaskRunner.Task {
   protected int totalContainers;
   protected int finishedContainers;
   
+  //To be compatible with new request id feature in hadoop-3.0.0
+  protected static long REQUEST_ID=1;
+  
   protected final Logger LOG = Logger.getLogger(AMSimulator.class);
   
   public AMSimulator() {
@@ -198,7 +201,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
   }
   
   protected ResourceRequest createResourceRequest(
-          Resource resource, String host, int priority, ExecutionTypeRequest exeType, int numContainers) {
+          Resource resource, String host, int priority, ExecutionTypeRequest exeType, int numContainers, long requestId) {
     ResourceRequest request = recordFactory
         .newRecordInstance(ResourceRequest.class);
     request.setCapability(resource);
@@ -208,6 +211,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
     prio.setPriority(priority);
     request.setPriority(prio);
     request.setExecutionTypeRequest(exeType);
+    request.setAllocationRequestId(requestId);
     return request;
   }
   
@@ -330,45 +334,94 @@ public abstract class AMSimulator extends TaskRunner.Task {
   
   protected List<ResourceRequest> packageRequests(
           List<ContainerSimulator> csList, int priority) {
-    // create requests
+    //create requests, modified by wei, but it also introduces bugs
     //Map<String, ResourceRequest> rackLocalRequestMap = new HashMap<String, ResourceRequest>();
     //Map<String, ResourceRequest> nodeLocalRequestMap = new HashMap<String, ResourceRequest>();
 	List<ResourceRequest> ask=new ArrayList<ResourceRequest>();
- 	List<ResourceRequest> rackLocalRequests=new ArrayList<ResourceRequest>();
-    List<ResourceRequest> nodeLocalRequests=new ArrayList<ResourceRequest>();
-    List<ResourceRequest> anyLocalRequests =new ArrayList<ResourceRequest>();
+ 	//List<ResourceRequest> rackLocalRequests=new ArrayList<ResourceRequest>();
+    //List<ResourceRequest> nodeLocalRequests=new ArrayList<ResourceRequest>();
+    //List<ResourceRequest> anyLocalRequests =new ArrayList<ResourceRequest>();
+    
+    Map<String,Map<Resource,ResourceRequest>> nodeLocalRequests=new HashMap<String,Map<Resource,ResourceRequest>>();
+    Map<String,Map<Resource,ResourceRequest>> rackLocalRequests=new HashMap<String,Map<Resource,ResourceRequest>>();
+    Map<Resource,ResourceRequest> anyLocalRequests=new HashMap<Resource,ResourceRequest>();
     ResourceRequest anyRequest = null;
+    
     for (ContainerSimulator cs : csList) {
     	
       LOG.info("cs type: "+cs.getExeType()+" "+cs.getType()+" "+cs.getId());
       String rackHostNames[] = SLSUtils.getRackHostName(cs.getHostname());
       // check rack local
       String rackname = rackHostNames[0];
-     
+      Map<Resource, ResourceRequest> requestMap;
       if(rackname!=null){
-        ResourceRequest request = createResourceRequest(
-              cs.getResource(), rackname, priority, cs.getExeType(),1);
-        rackLocalRequests.add(request);
-      }
+    	if(rackLocalRequests.containsKey(rackname)){
+    	   requestMap=rackLocalRequests.get(rackname);
+    	   if(requestMap.containsKey(cs.getResource())){
+    		   requestMap.get(cs.getResource()).setNumContainers(
+    			requestMap.get(cs.getResource()).getNumContainers()+1 	   
+    		   ); 
+    	   }else{
+    		  ResourceRequest request = createResourceRequest(
+    		              cs.getResource(), rackname, priority, cs.getExeType(),1,REQUEST_ID);
+    		  requestMap.put(cs.getResource(), request);       
+    		  REQUEST_ID++;
+    	   }
+    	}else{
+    	  requestMap=new HashMap<Resource,ResourceRequest>();
+    	  ResourceRequest request = createResourceRequest(
+	              cs.getResource(), rackname, priority, cs.getExeType(),1,REQUEST_ID);
+	      requestMap.put(cs.getResource(), request);       
+	      REQUEST_ID++;
+	      rackLocalRequests.put(rackname, requestMap);
+    	  	
+    	}  
+    }
       // check node local
       String hostname = rackHostNames[1];
       
       if(hostname!=null){
-    	 ResourceRequest request = createResourceRequest(
-                  cs.getResource(), hostname, priority, cs.getExeType(),1);
-            nodeLocalRequests.add(request);
+    	  if(nodeLocalRequests.containsKey(hostname)){
+       	   requestMap=nodeLocalRequests.get(hostname);
+       	   if(requestMap.containsKey(cs.getResource())){
+       		   requestMap.get(cs.getResource()).setNumContainers(
+       			requestMap.get(cs.getResource()).getNumContainers()+1 	   
+       		   ); 
+       	   }else{
+       		  ResourceRequest request = createResourceRequest(
+       		              cs.getResource(), hostname, priority, cs.getExeType(),1,REQUEST_ID);
+       		  requestMap.put(cs.getResource(), request);       
+       		  REQUEST_ID++;
+       	   }
+       	}else{
+       	  requestMap=new HashMap<Resource,ResourceRequest>();
+       	  ResourceRequest request = createResourceRequest(
+   	              cs.getResource(), hostname, priority, cs.getExeType(),1,REQUEST_ID);
+   	      requestMap.put(cs.getResource(), request);       
+   	      REQUEST_ID++;
+   	      nodeLocalRequests.put(hostname, requestMap);
+       	  	
+       	}   
       }
       
-      
-      ResourceRequest request = createResourceRequest(
-                  cs.getResource(),"*", priority, cs.getExeType(),1); 
-      anyLocalRequests.add(request);
-      
+      if(anyLocalRequests.containsKey(cs.getResource())){
+    	  anyLocalRequests.get(cs.getResource()).setNumContainers(
+    			  anyLocalRequests.get(cs.getResource()).getNumContainers()+1 	   
+         ); 
+      }else{
+    	  ResourceRequest request = createResourceRequest(
+                  cs.getResource(),"*", priority, cs.getExeType(),1,REQUEST_ID); 
+          REQUEST_ID++;
+          anyLocalRequests.put(cs.getResource(), request);  
+      }
     }
-    
-    ask.addAll(rackLocalRequests);
-    ask.addAll(nodeLocalRequests);
-    ask.addAll(anyLocalRequests);
+    for(Map.Entry<String,Map<Resource,ResourceRequest>> pair: rackLocalRequests.entrySet()){
+      ask.addAll(pair.getValue().values());	
+    }
+    for(Map.Entry<String,Map<Resource,ResourceRequest>> pair: nodeLocalRequests.entrySet()){
+      ask.addAll(pair.getValue().values());	 	
+    }
+    ask.addAll(anyLocalRequests.values());
     
     for(ResourceRequest askt: ask){
         LOG.info("type : "+askt.getExecutionTypeRequest());	

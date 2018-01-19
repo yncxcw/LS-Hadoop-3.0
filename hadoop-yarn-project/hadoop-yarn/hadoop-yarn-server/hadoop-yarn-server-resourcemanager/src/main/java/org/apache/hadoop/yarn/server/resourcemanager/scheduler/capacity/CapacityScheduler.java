@@ -963,8 +963,9 @@ public class CapacityScheduler extends
 
       // Process resource requests
       if (!ask.isEmpty()) {
+    	if(LOG.isDebugEnabled())  
         {
-          LOG.info(
+          LOG.debug(
               "allocate: pre-update " + applicationAttemptId + " ask size ="
                   + ask.size());
           application.showRequests();
@@ -975,9 +976,9 @@ public class CapacityScheduler extends
             == null)) {
           updateDemandForQueue = (LeafQueue) application.getQueue();
         }
-
+       if(LOG.isDebugEnabled())  
        {
-          LOG.info("allocate: post-update");
+          LOG.debug("allocate: post-update");
           application.showRequests();
         }
       }

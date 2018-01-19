@@ -68,6 +68,7 @@ public class MRAMSimulator extends AMSimulator {
   private static final int PRIORITY_REDUCE = 10;
   private static final int PRIORITY_MAP = 20;
   
+ 
   // pending maps
   private LinkedList<ContainerSimulator> pendingMaps =
           new LinkedList<ContainerSimulator>();
@@ -164,7 +165,10 @@ public class MRAMSimulator extends AMSimulator {
     ResourceRequest amRequest = createResourceRequest(
             BuilderUtils.newResource(MR_AM_CONTAINER_RESOURCE_MEMORY_MB,
                     MR_AM_CONTAINER_RESOURCE_VCORES),
-            ResourceRequest.ANY, 1, ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED), 1);
+            ResourceRequest.ANY, 1, ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED), 1,REQUEST_ID);
+    
+    REQUEST_ID++;
+    
     ask.add(amRequest);
     LOG.debug(MessageFormat.format("Application {0} sends out allocate " +
             "request for its AM", appId));

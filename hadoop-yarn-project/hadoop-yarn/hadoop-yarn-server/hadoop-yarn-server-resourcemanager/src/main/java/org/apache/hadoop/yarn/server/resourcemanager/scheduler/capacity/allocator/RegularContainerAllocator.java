@@ -474,8 +474,8 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       SchedulingMode schedulingMode, ResourceLimits currentResoureLimits) {
     Priority priority = schedulerKey.getPriority();
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("assignContainers: node=" + node.getNodeName()
+    {
+      LOG.info("assignContainers: node=" + node.getNodeName()
           + " application=" + application.getApplicationId()
           + " priority=" + schedulerKey.getPriority()
           + " pendingAsk=" + pendingAsk + " type=" + type);
