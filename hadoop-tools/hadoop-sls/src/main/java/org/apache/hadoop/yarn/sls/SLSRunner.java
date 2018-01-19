@@ -305,6 +305,8 @@ public class SLSRunner {
           Map jsonJob = i.next();
 
           // load job information
+          
+          String jobname    =jsonJob.get("job.id").toString();		  
           long jobStartTime = Long.parseLong(
                   jsonJob.get("job.start.ms").toString());
           String user = (String) jsonJob.get("job.user");
@@ -385,7 +387,7 @@ public class SLSRunner {
             	exeType=ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED);	
             }
 
-            LOG.info("newly added container exetype "+exeType.toString());
+            //LOG.info("newly added container exetype "+exeType.toString());
             int priority = Integer.parseInt(
                     jsonTask.get("container.priority").toString());
             String type = jsonTask.get("container.type").toString();
@@ -401,6 +403,7 @@ public class SLSRunner {
           String amType = jsonJob.get("am.type").toString();
           AMSimulator amSim = (AMSimulator) ReflectionUtils.newInstance(
                   amClassMap.get(amType), new Configuration());
+          LOG.info("newly creaed job: "+jobname+"conainer size: "+containerList.size()+"queue: "+queue);
           if (amSim != null) {
             amSim.init(AM_ID++, heartbeatInterval, containerList, rm,
                     this, jobStartTime, maxRuntime, user, queue,

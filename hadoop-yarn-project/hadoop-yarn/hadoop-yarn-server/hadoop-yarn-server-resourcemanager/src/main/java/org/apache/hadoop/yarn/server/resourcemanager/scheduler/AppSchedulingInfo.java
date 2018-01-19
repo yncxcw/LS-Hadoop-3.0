@@ -413,6 +413,7 @@ public class AppSchedulingInfo {
       // Group resource request by schedulerRequestKey and resourceName
       for (ResourceRequest request : requests) {
         SchedulerRequestKey schedulerKey = SchedulerRequestKey.create(request);
+        LOG.info("put new request id "+schedulerKey.getAllocationRequestId()+"resource: "+request.getCapability()+" num: "+request.getNumContainers());
         if (!dedupRequests.containsKey(schedulerKey)) {
           dedupRequests.put(schedulerKey, new HashMap<>());
         }

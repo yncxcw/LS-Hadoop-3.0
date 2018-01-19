@@ -192,11 +192,11 @@ public class NMSimulator extends TaskRunner.Task {
     for(ContainerSimulator container:runningContainers.values()){
     	  long containerMemory=container.pullCurrentMemoryUsuage(System.currentTimeMillis());
     	  nodeUsedMemory+=containerMemory;
-    	  LOG.info("contaienr "+container.getId()+" memory: "+containerMemory);
+    	 // LOG.info("contaienr "+container.getId()+" memory: "+containerMemory);
     	 
     }
     //TODO add set virtual memory support
-    LOG.info("node: "+node.getHostName()+" newly pmem "+nodeUsedMemory);
+    //LOG.info("node: "+node.getHostName()+" newly pmem "+nodeUsedMemory);
     nodeUtilization.setPhysicalMemory((int)nodeUsedMemory);
     
     //update opp statistics
