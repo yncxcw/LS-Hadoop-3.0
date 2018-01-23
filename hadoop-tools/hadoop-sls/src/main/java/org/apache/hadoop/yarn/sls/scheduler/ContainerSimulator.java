@@ -95,12 +95,12 @@ public class ContainerSimulator implements Delayed {
 	  
 	  if(times == null || memories == null){
 		  
-		  LOG.info("times null");
+		  LOG.warn("times null");
 		  return 0;
 	  }
 	  
 	  if(times.size() ==0 || memories.size() == 0){
-		  LOG.info("times 0");
+		  LOG.warn("times 0");
 		  return 0;
 	  }
 	  
