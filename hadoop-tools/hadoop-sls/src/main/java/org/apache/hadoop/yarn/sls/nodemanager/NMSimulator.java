@@ -115,7 +115,9 @@ public class NMSimulator extends TaskRunner.Task {
     // killed by nm container list
     killedContainerList=
     		Collections.synchronizedList(new ArrayList<ContainerId>());
-    
+    //running opp containers list
+    oppContainerRunning=
+    		Collections.synchronizedList(new ArrayList<ContainerId>());
     //opp container queuing and running list
     oppContainerQueuing=new TreeMap<Long, ContainerSimulator>();
     releasedContainerList =
@@ -331,6 +333,19 @@ public class NMSimulator extends TaskRunner.Task {
     //update opp statistics
     updateOppStatistics();
     
+    //code to test kill function
+    /*
+    if(runningContainers.size() >= 1){
+    	double randNum=Math.random() * ( 100 - 0 );
+    	if(randNum > 5){
+    		LOG.info("find container to kill");
+    		Entry<ContainerId,ContainerSimulator>test_container=runningContainers.entrySet().iterator().next();
+    		List<ContainerSimulator> toKills=new ArrayList<ContainerSimulator>();
+    	    toKills.add(test_container.getValue());
+    	    killOppRuningContainers(toKills); 
+    	}
+    }
+    */
     // send heart beat
     NodeHeartbeatRequest beatRequest =
             Records.newRecord(NodeHeartbeatRequest.class);

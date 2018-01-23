@@ -105,12 +105,21 @@ public class ContainerSimulator implements Delayed {
 	  }
 	  
 	  long runTime=time-(endTime-lifeTime);
+	  
+	  //for the first query of the memory usage
+	  if(runTime <= 0)
+		  return memories.get(0);
+	  
 	  int index=0;
 	  for(;index<times.size();index++){
 		  if(runTime<times.get(index)){
 			  break;
 		  }
 	  }
+	  
+	  //for the queries of the memory usage after completion
+	  if(index >= memories.size())
+		  return memories.get(memories.size()-1);
 	  
 	  return memories.get(index);
   }
