@@ -309,6 +309,13 @@ public class SLSRunner {
           String jobname    =jsonJob.get("job.id").toString();		  
           long jobStartTime = Long.parseLong(
                   jsonJob.get("job.start.ms").toString());
+          
+          long jobFinishTime;
+          if(jsonJob.containsKey("job.end.ms"))
+              jobFinishTime=Long.parseLong(jsonJob.get("job.end.ms").toString());
+          else
+        	  jobFinishTime=maxRuntime;
+          
           String user = (String) jsonJob.get("job.user");
           if (user == null)  user = "default";
           String queue = jsonJob.get("job.queue.name").toString();
@@ -406,7 +413,7 @@ public class SLSRunner {
           LOG.info("newly creaed job: "+jobname+"conainer size: "+containerList.size()+"queue: "+queue);
           if (amSim != null) {
             amSim.init(AM_ID++, heartbeatInterval, containerList, rm,
-                    this, jobStartTime, maxRuntime, user, queue,
+                    this, jobStartTime, jobFinishTime, user, queue,
                     isTracked, oldAppId);
             runner.schedule(amSim);
             

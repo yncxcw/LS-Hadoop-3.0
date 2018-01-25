@@ -133,6 +133,8 @@ public abstract class AMSimulator extends TaskRunner.Task {
     this.isTracked = isTracked;
     this.traceStartTimeMS = traceStartTime;
     this.traceFinishTimeMS = traceFinishTime;
+    
+    LOG.info("traceStart: "+this.traceStartTimeMS+" traceFinish: "+this.traceFinishTimeMS);
   }
 
   /**
