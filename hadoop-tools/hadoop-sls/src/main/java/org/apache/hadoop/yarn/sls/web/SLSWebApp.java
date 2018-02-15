@@ -474,7 +474,7 @@ public class SLSWebApp extends HttpServlet {
             .append(",\"cluster.available.vcores\":").append(availableVCoresGB)
             .append(",\"cluster.used.pmem\":").append(usedPmem);
 
-    LOG.info("realtime tracking printing4");
+    
     for (String queue : wrapper.getQueueSet()) {
       sb.append(",\"queue.").append(queue).append(".allocated.memory\":")
               .append(queueAllocatedMemoryMap.get(queue));

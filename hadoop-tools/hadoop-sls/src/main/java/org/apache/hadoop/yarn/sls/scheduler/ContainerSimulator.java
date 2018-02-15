@@ -104,7 +104,9 @@ public class ContainerSimulator implements Delayed {
 		  return 0;
 	  }
 	  
-	  long runTime=time-(endTime-lifeTime);
+	  //transform from second to millsecond
+	  long runTime=(time-(endTime-lifeTime))/1000;
+	  //LOG.info("runTime "+runTime+" endTime "+endTime+" lifeTime "+lifeTime);
 	  
 	  //for the first query of the memory usage
 	  if(runTime <= 0)
