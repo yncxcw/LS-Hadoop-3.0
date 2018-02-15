@@ -51,6 +51,7 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
+import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
 import org.apache.hadoop.yarn.server.resourcemanager.rmnode.UpdatedContainerInfo;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.Allocation;
@@ -229,6 +230,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
 	                (NodeUpdateSchedulerEvent)schedulerEvent);
 	        schedulerEvent = eventWrapper;
 	        updateQueueWithNodeUpdate(eventWrapper);
+	        updateNodeWithNodeUpdate(eventWrapper);
 	      } else if (schedulerEvent.getType() == SchedulerEventType.APP_ATTEMPT_REMOVED
 	          && schedulerEvent instanceof AppAttemptRemovedSchedulerEvent) {
 	        // check if having AM Container, update resource usage information
@@ -278,6 +280,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
 	      }
 	    }
   }
+
 
   private void updateQueueWithNodeUpdate(
           NodeUpdateSchedulerEventWrapper eventWrapper) {
@@ -421,6 +424,27 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
       queueLock.unlock();
     }
   }
+  
+
+  private void updateNodeWithNodeUpdate(NodeUpdateSchedulerEventWrapper eventWrapper){
+	  String node=eventWrapper.getRMNode().getHostName()+".pmem";
+	  ResourceUtilization utilization=eventWrapper.getRMNode().getNodeUtilization();
+	  //update counter for this metrics
+	  SortedMap<String, Counter> counterMap = metrics.getCounters();
+	  if(!counterMap.containsKey(node)){
+		  metrics.counter(node);
+		  counterMap=metrics.getCounters();
+	  }
+	  
+	  long oldMem=counterMap.get(node).getCount();
+	  long oldclusterMem=counterMap.get("cluster.pmem").getCount();
+	  LOG.info("node "+node+" pmem"+oldMem+" cluster "+oldclusterMem);
+	  //update node pmem
+	  counterMap.get(node).inc(-oldMem+utilization.getPhysicalMemory());
+	  //update cluster pmem
+	  counterMap.get("cluster.pmem").inc(-oldMem+utilization.getPhysicalMemory());
+  }
+  
 
   private void tearDown() throws IOException {
     // close job runtime writer
@@ -508,6 +532,9 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
   }
 
   private void registerClusterResourceMetrics() {
+	  
+	//reister a counter for cluster pmem
+	metrics.counter("cluster.pmem");  
     metrics.register("variable.cluster.allocated.memory",
       new Gauge<Long>() {
         @Override
@@ -689,7 +716,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
     @Override
     public void run() {
       if(running) {
-        // all WebApp to get real tracking json
+        
         String metrics = web.generateRealTimeTrackingMetrics();
         // output
         try {
@@ -700,10 +727,12 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
             metricsLogBW.write("," + metrics + EOL);
           }
           metricsLogBW.flush();
-        } catch (IOException e) {
+        } catch (Exception e) {
+          LOG.info("exception found"); 	
           e.printStackTrace();
         }
       }
+      
     }
   }
 

@@ -347,11 +347,14 @@ public class NMSimulator extends TaskRunner.Task {
     }
     */
     // send heart beat
+   
     NodeHeartbeatRequest beatRequest =
             Records.newRecord(NodeHeartbeatRequest.class);
     beatRequest.setLastKnownNMTokenMasterKey(masterKey);
     NodeStatus ns = Records.newRecord(NodeStatus.class);
     
+    //Set node utilization, we only consider the memory utilization
+    ns.setNodeUtilization(nodeUtilization);
     ns.setContainersStatuses(generateContainerStatusList());
     ns.setNodeId(node.getNodeID());
     ns.setKeepAliveApplications(new ArrayList<ApplicationId>());

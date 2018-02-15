@@ -37,8 +37,10 @@ import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.SchedulerEventType;
 import org.apache.hadoop.yarn.sls.SLSRunner;
 import org.apache.hadoop.yarn.sls.scheduler.FairSchedulerMetrics;
+import org.apache.hadoop.yarn.sls.scheduler.SLSCapacityScheduler;
 import org.apache.hadoop.yarn.sls.scheduler.SchedulerMetrics;
 import org.apache.hadoop.yarn.sls.scheduler.SchedulerWrapper;
+import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -76,6 +78,9 @@ public class SLSWebApp extends HttpServlet {
   private transient Map<String, Counter> queueAllocatedVCoresCounterMap;
   private int port;
   private int ajaxUpdateTimeMS = 1000;
+  
+  public final Logger LOG = Logger.getLogger(SLSWebApp.class);
+  
   // html page templates
   private String simulateInfoTemplate;
   private String simulateTemplate;
@@ -306,6 +311,7 @@ public class SLSWebApp extends HttpServlet {
   }
 
   public String generateRealTimeTrackingMetrics() {
+	
     // JVM
     double jvmFreeMemoryGB, jvmMaxMemoryGB, jvmTotalMemoryGB;
     if (jvmFreeMemoryGauge == null &&
@@ -331,6 +337,7 @@ public class SLSWebApp extends HttpServlet {
             Double.parseDouble(jvmTotalMemoryGauge.getValue().toString())
                     /1024/1024/1024;
 
+    
     // number of running applications/containers
     String numRunningApps, numRunningContainers;
     if (numRunningAppsGauge == null &&
@@ -350,7 +357,8 @@ public class SLSWebApp extends HttpServlet {
 
     // cluster available/allocate resource
     double allocatedMemoryGB, allocatedVCoresGB,
-            availableMemoryGB, availableVCoresGB;
+            availableMemoryGB, availableVCoresGB, usedPmem;
+              
     if (allocatedMemoryGauge == null &&
             metrics.getGauges()
                     .containsKey("variable.cluster.allocated.memory")) {
@@ -384,6 +392,9 @@ public class SLSWebApp extends HttpServlet {
     availableVCoresGB = availableVCoresGauge == null ? 0 :
             Double.parseDouble(availableVCoresGauge.getValue().toString());
 
+    usedPmem=metrics.getCounters().containsKey("cluster.pmem")?
+    		metrics.getCounters().get("cluster.pmem").getCount()*1.0/1024.0:0;
+    		
     // scheduler operation
     double allocateTimecost, handleTimecost;
     if (allocateTimecostHistogram == null &&
@@ -445,6 +456,8 @@ public class SLSWebApp extends HttpServlet {
                       queueAllocatedVCoresCounterMap.get(queue).getCount(): 0;
       queueAllocatedVCoresMap.put(queue, queueAllocatedVCores);
     }
+    
+   
 
     // package results
     StringBuilder sb = new StringBuilder();
@@ -458,8 +471,10 @@ public class SLSWebApp extends HttpServlet {
             .append(",\"cluster.allocated.memory\":").append(allocatedMemoryGB)
             .append(",\"cluster.allocated.vcores\":").append(allocatedVCoresGB)
             .append(",\"cluster.available.memory\":").append(availableMemoryGB)
-            .append(",\"cluster.available.vcores\":").append(availableVCoresGB);
+            .append(",\"cluster.available.vcores\":").append(availableVCoresGB)
+            .append(",\"cluster.used.pmem\":").append(usedPmem);
 
+    LOG.info("realtime tracking printing4");
     for (String queue : wrapper.getQueueSet()) {
       sb.append(",\"queue.").append(queue).append(".allocated.memory\":")
               .append(queueAllocatedMemoryMap.get(queue));

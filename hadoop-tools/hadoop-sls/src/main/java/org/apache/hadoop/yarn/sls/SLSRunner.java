@@ -371,7 +371,7 @@ public class SLSRunner {
                 	tmems.add(Long.parseLong(tm.toString()));
                 }
                 
-                if(ttimes != tmems){
+                if(ttimes.size() != tmems.size()){
                 	throw new YarnException("times size and mems size are mismatched");
                 }
                 
