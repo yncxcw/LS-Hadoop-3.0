@@ -197,7 +197,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
         SLSRunner.getRunner().getStartTimeMS();
     // record job running information
     ((SchedulerWrapper)rm.getResourceScheduler())
-         .addAMRuntime(appId, 
+         .addAMRuntime(oldAppId,appId, 
                       traceStartTimeMS, traceFinishTimeMS, 
                       simulateStartTimeMS, simulateFinishTimeMS);
   }

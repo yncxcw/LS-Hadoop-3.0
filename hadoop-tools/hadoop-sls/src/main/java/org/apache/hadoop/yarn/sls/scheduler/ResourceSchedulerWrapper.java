@@ -728,14 +728,14 @@ final public class ResourceSchedulerWrapper
   }
 
   // the following functions are used by AMSimulator
-  public void addAMRuntime(ApplicationId appId,
+  public void addAMRuntime(String oldAppId,ApplicationId appId,
                            long traceStartTimeMS, long traceEndTimeMS,
                            long simulateStartTimeMS, long simulateEndTimeMS) {
     if (metricsON) {
       try {
         // write job runtime information
         StringBuilder sb = new StringBuilder();
-        sb.append(appId).append(",").append(traceStartTimeMS).append(",")
+        sb.append(oldAppId).append(",").append(appId).append(",").append(traceStartTimeMS).append(",")
             .append(traceEndTimeMS).append(",").append(simulateStartTimeMS)
             .append(",").append(simulateEndTimeMS);
         jobRuntimeLogBW.write(sb.toString() + EOL);

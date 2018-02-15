@@ -40,7 +40,7 @@ public interface SchedulerWrapper {
               String oldAppId);
 	public void removeTrackedApp(ApplicationAttemptId appAttemptId,
                  String oldAppId);
-	public void addAMRuntime(ApplicationId appId,
+	public void addAMRuntime(String oldAppId, ApplicationId appId,
               long traceStartTimeMS, long traceEndTimeMS,
               long simulateStartTimeMS, long simulateEndTimeMS);
 
