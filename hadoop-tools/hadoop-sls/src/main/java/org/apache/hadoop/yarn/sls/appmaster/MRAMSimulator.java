@@ -197,10 +197,11 @@ public class MRAMSimulator extends AMSimulator {
 		   List<ContainerSimulator> schedList, Container container){
 	//first round, try to match both resource and locality
 	NodeId rnode=container.getNodeId(); 
-	LOG.info("match node id: "+rnode.getHost());
+	//LOG.info("match node id: "+rnode.getHost()+" get resource "+container.getResource());
 	for(int i=0;i<schedList.size();i++){
 		 String rackHostNames[] = SLSUtils.getRackHostName(schedList.get(i).getHostname());
 	     String hostName=rackHostNames[1];
+	     //LOG.info("request resource "+schedList.get(i).getResource());
 	     if(rnode.getHost().equals(hostName) && 
 	    		 container.getResource().equals(schedList.get(i).getResource())){
 	    	 return schedList.remove(i);
@@ -229,7 +230,7 @@ public class MRAMSimulator extends AMSimulator {
           // Get AM container
           Container container = response.getAllocatedContainers().get(0);
           se.getNmMap().get(container.getNodeId())
-              .addNewContainer(container, -1L,ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED),null,null);
+              .addNewContainer(container, -1L,ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED),null,null,simulateStartTimeMS);
           // Start AM container
           amContainer = container;
           LOG.info(MessageFormat.format("Application {0} starts its " +
@@ -308,14 +309,15 @@ public class MRAMSimulator extends AMSimulator {
         if (! scheduledMaps.isEmpty()) {
           ContainerSimulator cs = matchAllocatedContainers(scheduledMaps,container);
           if(cs==null){
-        	  LOG.warn("allcoated resource could not find a match");;
+        	  LOG.debug("allcoated resource could not find a match");
           }
           LOG.info(MessageFormat.format("Application {0} starts a " +
-                  "launch a mapper ({1}).", appId, container.getId()));
+                  "launch a mapper ({1}) o node {2}", appId, container.getId(), container.getNodeId()));
           assignedMaps.put(container.getId(), cs);
+         
           se.getNmMap().get(container.getNodeId())
                   .addNewContainer(container, cs.getLifeTime(),
-                		   cs.getExeType(),cs.getTimes(),cs.getMemories());
+                		   cs.getExeType(),cs.getTimes(),cs.getMemories(),simulateStartTimeMS);
         } else if (! this.scheduledReduces.isEmpty()) {
           ContainerSimulator cs = matchAllocatedContainers(scheduledReduces,container);
           if(cs==null){
@@ -326,7 +328,7 @@ public class MRAMSimulator extends AMSimulator {
           assignedReduces.put(container.getId(), cs);
           se.getNmMap().get(container.getNodeId())
                   .addNewContainer(container, cs.getLifeTime(),
-                		 cs.getExeType(), cs.getTimes(),cs.getMemories());
+                		 cs.getExeType(), cs.getTimes(),cs.getMemories(),simulateStartTimeMS);
         }
       }
     }
@@ -424,6 +426,7 @@ public class MRAMSimulator extends AMSimulator {
       }
     });
     if (response != null) {
+      
       responseQueue.put(response);
     }
   }

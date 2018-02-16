@@ -105,7 +105,7 @@ public class ContainerSimulator implements Delayed {
 	  }
 	  
 	  //transform from second to millsecond
-	  long runTime=(time-(endTime-lifeTime))/1000;
+	  long runTime=(time-(endTime-lifeTime));
 	  //LOG.info("runTime "+runTime+" endTime "+endTime+" lifeTime "+lifeTime);
 	  
 	  //for the first query of the memory usage
@@ -156,7 +156,13 @@ public class ContainerSimulator implements Delayed {
       throw new IllegalArgumentException(
               "Parameter must be a ContainerSimulator instance");
     }
+    
     ContainerSimulator other = (ContainerSimulator) o;
+    if(endTime <= 0 || other.endTime <= 0){
+    	throw new IllegalArgumentException(
+                "endTime must be large than 0");	
+    }
+    
     return (int) Math.signum(endTime - other.endTime);
   }
 
@@ -170,8 +176,13 @@ public class ContainerSimulator implements Delayed {
     return lifeTime;
   }
   
+  
   public String getHostname() {
     return hostname;
+  }
+  
+  public void setEndTime(long time){
+	 this.endTime = time; 
   }
   
   public long getEndTime() {
