@@ -203,13 +203,13 @@ public class NMSimulator extends TaskRunner.Task {
 		  containerQueue.remove(cs);
 		  oppContainerRunning.remove(cs.getId());
 		  killedContainerList.add(containerId);
-		//updating node resources
+		  LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
+		 //updating node resources
 	      int physicalMemory=(int)cs.pullCurrentMemoryUsuage(System.currentTimeMillis());
 	      int virtualMemory =(int)cs.getResource().getMemorySize();
 	      nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
 	      nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory);
-		  LOG.info(MessageFormat.format("NodeManager {0} kill a " +
-				  "container ({1}).", node.getNodeID(), containerId));
+		  
 	  }
   }
 
@@ -218,9 +218,7 @@ public class NMSimulator extends TaskRunner.Task {
 	  //update the endtime before running
 	  long currentTimeMillis=System.currentTimeMillis();
 	  container.setEndTime(currentTimeMillis+container.getLifeTime());
-	  LOG.info(MessageFormat.format("NodeManager {0} launches a new " +
-	            "container ({1}).", node.getNodeID(), container.getId())+" current time "+currentTimeMillis+" end time "+container.getEndTime());
-	  
+	  LOG.info("launching container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory()); 
 	  containerQueue.add(container);
 	  if(container.getExeType().getExecutionType().equals(ExecutionType.OPPORTUNISTIC)){
 		oppContainerRunning.add(container.getId());  
@@ -487,7 +485,7 @@ public class NMSimulator extends TaskRunner.Task {
          		 
     	 }else{
     		 //queuing this container
-    		 LOG.info("queuing container "+container.getId()+" on node "+node.getNodeID());
+    		 LOG.info("queuing container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
     		 oppContainerQueuing.put(appLaunchTime, cs);
     	 }
     	//for regular container, no matter how, we need to run it.	 
