@@ -206,6 +206,9 @@ public class SLSRunner {
     int heartbeatInterval = conf.getInt(
             SLSConfiguration.NM_HEARTBEAT_INTERVAL_MS,
             SLSConfiguration.NM_HEARTBEAT_INTERVAL_MS_DEFAULT);
+    boolean byVirtual= conf.getBoolean(
+            SLSConfiguration.NM_BY_VIRTUAL,
+            SLSConfiguration.NM_BY_VIRTUAL_DEFAULT);
     // nm information (fetch from topology file, or from sls/rumen json file)
     Set<String> nodeSet = new HashSet<String>();
     if (nodeFile.isEmpty()) {
@@ -229,7 +232,7 @@ public class SLSRunner {
       // we randomize the heartbeat start time from zero to 1 interval
       NMSimulator nm = new NMSimulator();
       nm.init(hostName, nmMemoryMB, nmVCores, 
-          random.nextInt(heartbeatInterval), heartbeatInterval, rm);
+          random.nextInt(heartbeatInterval), heartbeatInterval, rm, byVirtual);
       nmMap.put(nm.getNode().getNodeID(), nm);
       runner.schedule(nm);
       rackSet.add(nm.getNode().getRackName());
@@ -250,7 +253,7 @@ public class SLSRunner {
       if (numRunningNodes == numNMs) {
         break;
       }
-      LOG.info(MessageFormat.format("SLSRunner is waiting for all " +
+      LOG.debug(MessageFormat.format("SLSRunner is waiting for all " +
               "nodes RUNNING. {0} of {1} NMs initialized.",
               numRunningNodes, numNMs));
       Thread.sleep(1000);

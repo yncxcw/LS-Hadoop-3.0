@@ -99,7 +99,7 @@ public class NMSimulator extends TaskRunner.Task {
   private final static Logger LOG = Logger.getLogger(NMSimulator.class);
   
   public void init(String nodeIdStr, int memory, int cores,
-          int dispatchTime, int heartBeatInterval, ResourceManager rm)
+          int dispatchTime, int heartBeatInterval, ResourceManager rm, boolean byVirtual)
           throws IOException, YarnException {
     super.init(dispatchTime, dispatchTime + 1000000L * heartBeatInterval,
             heartBeatInterval);
@@ -107,7 +107,7 @@ public class NMSimulator extends TaskRunner.Task {
     String rackHostName[] = SLSUtils.getRackHostName(nodeIdStr);
     this.node = NodeInfo.newNodeInfo(rackHostName[0], rackHostName[1], 
                   BuilderUtils.newResource(memory, cores));
-    
+    this.byVirtual=byVirtual;
     this.rm = rm;
     // init data structures
     completedContainerList=
@@ -161,12 +161,13 @@ public class NMSimulator extends TaskRunner.Task {
 	  int oppQueues=0;
 	  int oppRunnings=0;
 	  int oppQueueopps=0;
-	  for(ContainerId cntId:oppContainerRunning){ 	
+	  synchronized(oppContainerRunning){
+	   for(ContainerId cntId:oppContainerRunning){ 	
 	     oppCores+=runningContainers.get(cntId).getResource().getVirtualCores();
 	     oppMems+=runningContainers.get(cntId).getResource().getMemorySize();
 	     oppRunnings+=1;
+	   }
 	  }
-	  
 	  oppQueueopps=oppContainerQueuing.size();
 	  //TODO theoritical the oppQueues = queued guranteed + queued opp, we do a simlicity here.
 	  oppQueues= oppQueueopps;
@@ -202,13 +203,15 @@ public class NMSimulator extends TaskRunner.Task {
 		  ContainerSimulator cs = runningContainers.remove(containerId);
 		  containerQueue.remove(cs);
 		  oppContainerRunning.remove(cs.getId());
-		  killedContainerList.add(containerId);
-		  LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
+		  synchronized(killedContainerList){
+		     killedContainerList.add(containerId);
+		  }
 		 //updating node resources
 	      int physicalMemory=(int)cs.pullCurrentMemoryUsuage(System.currentTimeMillis());
 	      int virtualMemory =(int)cs.getResource().getMemorySize();
 	      nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
 	      nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory);
+	      LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
 		  
 	  }
   }
@@ -218,7 +221,7 @@ public class NMSimulator extends TaskRunner.Task {
 	  //update the endtime before running
 	  long currentTimeMillis=System.currentTimeMillis();
 	  container.setEndTime(currentTimeMillis+container.getLifeTime());
-	  LOG.info("launching container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory()); 
+	   
 	  containerQueue.add(container);
 	  if(container.getExeType().getExecutionType().equals(ExecutionType.OPPORTUNISTIC)){
 		oppContainerRunning.add(container.getId());  
@@ -228,6 +231,7 @@ public class NMSimulator extends TaskRunner.Task {
       int virtualMemory =(int)container.getResource().getMemorySize();
       nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()+physicalMemory);
       nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()+virtualMemory);
+      LOG.info("launching container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
   }
   //finish  containers by polling @containerQueue, updating node resource
   public void finishContainer(){
@@ -256,8 +260,9 @@ public class NMSimulator extends TaskRunner.Task {
 	  ContainerSimulator cs = runningContainers.remove(containerId);
       containerQueue.remove(cs);
       oppContainerRunning.remove(cs.getId());
+      //it has been procted by outer lock
       releasedContainerList.add(containerId);
-    //updating node resources
+      //updating node resources
       int physicalMemory=(int)cs.pullCurrentMemoryUsuage(System.currentTimeMillis());
       int virtualMemory =(int)cs.getResource().getMemorySize();
       nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
@@ -269,6 +274,7 @@ public class NMSimulator extends TaskRunner.Task {
   
   public void launchQueuedOppContainers(){
 	  //the @oppContainerQueuing is ordered by their submission time
+	  synchronized(oppContainerQueuing){
 	  Iterator<Entry<Long, ContainerSimulator>> entryIt = oppContainerQueuing.entrySet().iterator();
 	  while(entryIt.hasNext()){
 		  Entry<Long, ContainerSimulator> entry = entryIt.next();
@@ -282,6 +288,9 @@ public class NMSimulator extends TaskRunner.Task {
 	    	break;
 	      } 
 	  }
+	  
+	  LOG.info("queuing "+oppContainerQueuing.size());
+	 }
   }
   /**
    * try to kill numbers of containers to free resource of memory  
@@ -383,7 +392,24 @@ public class NMSimulator extends TaskRunner.Task {
             LOG.debug(MessageFormat.format("NodeManager {0} releases " +
                 "an AM ({1}).", node.getNodeID(), containerId));
           } else {
-        	removeContainer(runningContainers.get(containerId));
+        	boolean found=false;  
+        	//the container is queued, remove it from the queue 
+        	synchronized(oppContainerQueuing){
+        		  Iterator<Entry<Long, ContainerSimulator>> entryIt = oppContainerQueuing.entrySet().iterator();
+        		  while(entryIt.hasNext()){
+        			  Entry<Long, ContainerSimulator> entry = entryIt.next();
+        			  ContainerSimulator cs=entry.getValue();
+        			 if(cs.getId().equals(containerId)){
+        		    	 //remove from the queue.
+        		    	 entryIt.remove();
+        		         found=true;
+        		         break;
+        		      }
+        		  }
+        	}
+        	//if it is not queued, remove it from running queue
+        	if(!found)
+        	   removeContainer(runningContainers.get(containerId));
           }
         }
       }
@@ -486,7 +512,9 @@ public class NMSimulator extends TaskRunner.Task {
     	 }else{
     		 //queuing this container
     		 LOG.info("queuing container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
-    		 oppContainerQueuing.put(appLaunchTime, cs);
+    		 synchronized(oppContainerQueuing){
+    		    oppContainerQueuing.put(appLaunchTime, cs);
+    		 }
     	 }
     	//for regular container, no matter how, we need to run it.	 
       }else{

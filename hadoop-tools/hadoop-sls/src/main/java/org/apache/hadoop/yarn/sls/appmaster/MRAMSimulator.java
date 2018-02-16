@@ -230,7 +230,10 @@ public class MRAMSimulator extends AMSimulator {
           // Get AM container
           Container container = response.getAllocatedContainers().get(0);
           se.getNmMap().get(container.getNodeId())
-              .addNewContainer(container, -1L,ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED),null,null,simulateStartTimeMS);
+              .addNewContainer(container, -1L,
+            		       ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED),
+            		        null,null,
+            		        simulateStartTimeMS);
           // Start AM container
           amContainer = container;
           LOG.info(MessageFormat.format("Application {0} starts its " +

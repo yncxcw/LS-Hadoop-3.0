@@ -60,6 +60,11 @@ public class SLSConfiguration {
   public static final String NM_HEARTBEAT_INTERVAL_MS = NM_PREFIX
                                                   + "heartbeat.interval.ms";
   public static final int NM_HEARTBEAT_INTERVAL_MS_DEFAULT = 1000;
+ 
+  public static final String NM_BY_VIRTUAL = NM_PREFIX
+          + "by.virual";
+public static final boolean NM_BY_VIRTUAL_DEFAULT = false;
+  
   // am
   public static final String AM_PREFIX = PREFIX + "am.";
   public static final String AM_HEARTBEAT_INTERVAL_MS = AM_PREFIX
