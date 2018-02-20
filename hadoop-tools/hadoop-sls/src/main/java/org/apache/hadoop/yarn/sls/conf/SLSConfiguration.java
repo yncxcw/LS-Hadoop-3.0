@@ -62,7 +62,7 @@ public class SLSConfiguration {
   public static final int NM_HEARTBEAT_INTERVAL_MS_DEFAULT = 1000;
  
   public static final String NM_BY_VIRTUAL = NM_PREFIX
-          + "by.virual";
+          + "by.virtual";
 public static final boolean NM_BY_VIRTUAL_DEFAULT = false;
   
   // am

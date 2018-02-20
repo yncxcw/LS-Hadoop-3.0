@@ -209,6 +209,11 @@ public class SLSRunner {
     boolean byVirtual= conf.getBoolean(
             SLSConfiguration.NM_BY_VIRTUAL,
             SLSConfiguration.NM_BY_VIRTUAL_DEFAULT);
+    if(byVirtual){
+       LOG.info("by virtual");
+    }else{
+       LOG.info("no by virtual");	
+    }
     // nm information (fetch from topology file, or from sls/rumen json file)
     Set<String> nodeSet = new HashSet<String>();
     if (nodeFile.isEmpty()) {

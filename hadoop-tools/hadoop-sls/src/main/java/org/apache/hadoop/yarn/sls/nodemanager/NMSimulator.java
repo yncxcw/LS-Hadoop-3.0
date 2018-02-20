@@ -211,8 +211,11 @@ public class NMSimulator extends TaskRunner.Task {
 	      int virtualMemory =(int)cs.getResource().getMemorySize();
 	      nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
 	      nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory);
-	      LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
-		  
+	     
+	      LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+
+				  " phy utilization "+nodeUtilization.getPhysicalMemory()+
+				  " vir utilization "+nodeUtilization.getVirtualMemory());
+	      
 	  }
   }
 
@@ -231,7 +234,11 @@ public class NMSimulator extends TaskRunner.Task {
       int virtualMemory =(int)container.getResource().getMemorySize();
       nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()+physicalMemory);
       nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()+virtualMemory);
-      LOG.info("launching container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
+      
+      LOG.info("launching container "+container.getId()+" on node "+node.getNodeID()+
+			  " phy utilization "+nodeUtilization.getPhysicalMemory()+
+			  " vir utilization "+nodeUtilization.getVirtualMemory());
+    
   }
   //finish  containers by polling @containerQueue, updating node resource
   public void finishContainer(){
@@ -289,7 +296,7 @@ public class NMSimulator extends TaskRunner.Task {
 	      } 
 	  }
 	  
-	  LOG.info("queuing "+oppContainerQueuing.size());
+	  LOG.info("queue size"+oppContainerQueuing.size() + " host "+getNode().getHostName());
 	 }
   }
   /**
@@ -511,7 +518,9 @@ public class NMSimulator extends TaskRunner.Task {
          		 
     	 }else{
     		 //queuing this container
-    		 LOG.info("queuing container "+container.getId()+" on node "+node.getNodeID()+" utilization "+nodeUtilization.getPhysicalMemory());
+    		 LOG.info("queuing container "+container.getId()+" on node "+node.getNodeID()+
+    				  " phy utilization "+nodeUtilization.getPhysicalMemory()+
+    				  " vir utilization "+nodeUtilization.getVirtualMemory());
     		 synchronized(oppContainerQueuing){
     		    oppContainerQueuing.put(appLaunchTime, cs);
     		 }
