@@ -103,6 +103,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
   protected long traceFinishTimeMS;
   protected long simulateStartTimeMS;
   protected long simulateFinishTimeMS;
+  protected long simulateAMStartTimeMS;
   // whether tracked in Metrics
   protected boolean isTracked;
   // progress
@@ -132,6 +133,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
     this.oldAppId = oldAppId;
     this.isTracked = isTracked;
     this.traceStartTimeMS = traceStartTime;
+    
     this.traceFinishTimeMS = traceFinishTime;
     
     LOG.info("traceStart: "+this.traceStartTimeMS+" traceFinish: "+this.traceFinishTimeMS);
@@ -199,7 +201,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
     ((SchedulerWrapper)rm.getResourceScheduler())
          .addAMRuntime(oldAppId,appId, 
                       traceStartTimeMS, traceFinishTimeMS, 
-                      simulateStartTimeMS, simulateFinishTimeMS);
+                      simulateStartTimeMS, simulateFinishTimeMS,simulateAMStartTimeMS);
   }
   
   protected ResourceRequest createResourceRequest(
@@ -437,6 +439,10 @@ public abstract class AMSimulator extends TaskRunner.Task {
   }
   public String getAMType() {
     return amtype;
+  }
+  
+  public long getSchedulingDelay(){
+	 return simulateAMStartTimeMS - simulateStartTimeMS; 
   }
   public long getDuration() {
     return simulateFinishTimeMS - simulateStartTimeMS;

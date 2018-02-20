@@ -239,6 +239,8 @@ public class MRAMSimulator extends AMSimulator {
           LOG.info(MessageFormat.format("Application {0} starts its " +
               "AM container ({1}).", appId, amContainer.getId()));
           isAMContainerRunning = true;
+          simulateAMStartTimeMS = System.currentTimeMillis() - 
+                  SLSRunner.getRunner().getStartTimeMS();
         }
       }
       return;
