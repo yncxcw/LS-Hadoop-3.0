@@ -405,7 +405,7 @@ public class SLSRunner {
             int priority = Integer.parseInt(
                     jsonTask.get("container.priority").toString());
             String type = jsonTask.get("container.type").toString();
-            if(ttimes.size()>0){
+            if(ttimes.size()>0 && tmems.size()>0){
             containerList.add(new ContainerSimulator(res,
                     lifeTime, hostname, priority, type,exeType,ttimes,tmems));
             }else{

@@ -160,7 +160,7 @@ public class AllocationBasedResourceUtilizationTracker implements
   @Override
   public boolean hasResourcesAvailable(Container container) {
 	
-	long pMemBytes = container.getResource().getMemorySize() * 1024 * 1024L;   
+	long pMemBytes = container.getResource().getMemorySize() << 20;   
 	if(enablePmemLaunch){  
 		//no matter what, launch GUA containers 
 		if(container.cloneAndGetContainerStatus().getExecutionType() == ExecutionType.GUARANTEED){
@@ -213,6 +213,8 @@ public class AllocationBasedResourceUtilizationTracker implements
           (pMemBytes >> 20),
           (getContainersMonitor().getPmemAllocatedForContainers() >> 20));
     }
+    
+    //default policy is to check the pmem
     if (this.containersAllocation.getPhysicalMemory() +
         (int) (pMemBytes >> 20) >
         (int) (getContainersMonitor()
@@ -286,12 +288,12 @@ public void syncEstimatedMemory() {
 	if(now - estimatedLastSyncTime > estimatedSyncPeriod){
 		
 		//sync with actual usage
-		this.estimatedMemAvailable= this.context.getNodeResourceMonitor().
+		this.estimatedMemAvailable = this.context.getNodeResourceMonitor().
 				                     getAvailableMemory();
 		//update sync period
-		this.estimatedSyncPeriod  = Math.min((long)recentOppProfileTime.average(),this.estimatedMaxSyncPeriod);
+		this.estimatedSyncPeriod   = Math.min((long)recentOppProfileTime.average(),this.estimatedMaxSyncPeriod);
 	    //record last sync time
-		this.estimatedLastSyncTime= now;
+		this.estimatedLastSyncTime = now;
 		LOG.info("profile syn: "+this.estimatedSyncPeriod);
 	}
 	

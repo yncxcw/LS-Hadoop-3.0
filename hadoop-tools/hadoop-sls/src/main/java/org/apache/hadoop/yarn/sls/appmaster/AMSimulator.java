@@ -254,6 +254,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
     ApplicationSubmissionContext appSubContext = 
         Records.newRecord(ApplicationSubmissionContext.class);
     appSubContext.setApplicationId(appId);
+    appSubContext.setApplicationName(oldAppId);
     appSubContext.setMaxAppAttempts(1);
     appSubContext.setQueue(queue);
     appSubContext.setPriority(Priority.newInstance(0));
