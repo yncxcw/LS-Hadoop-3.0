@@ -192,7 +192,7 @@ public class NMSimulator extends TaskRunner.Task {
 	  long containerMemory=0;
 	  if(container!=null)
 	     containerMemory = byVirtual ? container.getResource().getMemorySize() : container.pullCurrentMemoryUsuage(System.currentTimeMillis()); 
-	 LOG.info("node "+node.getHostName()+" current used "+usedMemory+" new request "+containerMemory); 
+	 //LOG.info("node "+node.getHostName()+" current used "+usedMemory+" new request "+containerMemory); 
 	 return node.getTotalCapability().getMemorySize() - usedMemory - containerMemory;
   }
   
@@ -296,7 +296,7 @@ public class NMSimulator extends TaskRunner.Task {
 	      } 
 	  }
 	  
-	  LOG.info("queue size"+oppContainerQueuing.size() + " host "+getNode().getHostName());
+	  //LOG.info("queue size "+oppContainerQueuing.size() + " host "+getNode().getHostName());
 	 }
   }
   /**

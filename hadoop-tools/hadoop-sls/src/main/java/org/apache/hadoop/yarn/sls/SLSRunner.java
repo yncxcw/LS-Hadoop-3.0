@@ -348,8 +348,6 @@ public class SLSRunner {
                     jsonTask.get("container.end.ms").toString());
             long lifeTime = taskFinish - taskStart;
             
-            LOG.info("lifeTimne: "+lifeTime);
-
             // Set memory and vcores from job trace file
             Resource res = Resources.clone(containerResource);
             if (jsonTask.containsKey("container.memory")) {

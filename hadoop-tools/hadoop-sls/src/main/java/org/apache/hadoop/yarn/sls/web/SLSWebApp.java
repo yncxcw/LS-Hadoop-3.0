@@ -161,7 +161,8 @@ public class SLSWebApp extends HttpServlet {
                 printJsonTrack(request, response);
               }
         } catch (Exception e) {
-          e.printStackTrace();
+            LOG.info(e.toString());
+        	e.printStackTrace();
         }
       }
     };
@@ -302,7 +303,8 @@ public class SLSWebApp extends HttpServlet {
    */
   private void printJsonMetrics(HttpServletRequest request,
                                 HttpServletResponse response)
-          throws IOException {
+     throws IOException {
+  
     response.setContentType("text/json");
     response.setStatus(HttpServletResponse.SC_OK);
 
@@ -311,6 +313,7 @@ public class SLSWebApp extends HttpServlet {
   }
 
   public String generateRealTimeTrackingMetrics() {
+	
 	
     // JVM
     double jvmFreeMemoryGB, jvmMaxMemoryGB, jvmTotalMemoryGB;
@@ -394,7 +397,8 @@ public class SLSWebApp extends HttpServlet {
 
     usedPmem=metrics.getCounters().containsKey("cluster.pmem")?
     		metrics.getCounters().get("cluster.pmem").getCount()*1.0/1024.0:0;
-    		
+    
+   		
     // scheduler operation
     double allocateTimecost, handleTimecost;
     if (allocateTimecostHistogram == null &&
@@ -431,6 +435,8 @@ public class SLSWebApp extends HttpServlet {
     // allocated resource for each queue
     Map<String, Double> queueAllocatedMemoryMap = new HashMap<String, Double>();
     Map<String, Long> queueAllocatedVCoresMap = new HashMap<String, Long>();
+   
+    if(wrapper.getQueueSet()!=null){
     for (String queue : wrapper.getQueueSet()) {
       // memory
       String key = "counter.queue." + queue + ".allocated.memory";
@@ -456,9 +462,8 @@ public class SLSWebApp extends HttpServlet {
                       queueAllocatedVCoresCounterMap.get(queue).getCount(): 0;
       queueAllocatedVCoresMap.put(queue, queueAllocatedVCores);
     }
-    
+    }
    
-
     // package results
     StringBuilder sb = new StringBuilder();
     sb.append("{");
@@ -474,12 +479,13 @@ public class SLSWebApp extends HttpServlet {
             .append(",\"cluster.available.vcores\":").append(availableVCoresGB)
             .append(",\"cluster.used.pmem\":").append(usedPmem);
 
-    
+    if(wrapper.getQueueSet()!=null){
     for (String queue : wrapper.getQueueSet()) {
       sb.append(",\"queue.").append(queue).append(".allocated.memory\":")
               .append(queueAllocatedMemoryMap.get(queue));
       sb.append(",\"queue.").append(queue).append(".allocated.vcores\":")
               .append(queueAllocatedVCoresMap.get(queue));
+    }
     }
     // scheduler allocate & handle
     sb.append(",\"scheduler.allocate.timecost\":").append(allocateTimecost);
@@ -489,6 +495,8 @@ public class SLSWebApp extends HttpServlet {
               .append(handleOperTimecostMap.get(e));
     }
     sb.append("}");
+    
+    LOG.info("end generating rael time track");
     return sb.toString();
   }
 

@@ -217,6 +217,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
 	    }
 	    if(!running)    running = true;
 
+	   
 	    // metrics on
 	    Timer.Context handlerTimer = null;
 	    Timer.Context operationTimer = null;
@@ -438,7 +439,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
 	  
 	  long oldMem=counterMap.get(node).getCount();
 	  long oldclusterMem=counterMap.get("cluster.pmem").getCount();
-	  LOG.info("node "+node+" pmem"+oldMem+" cluster "+oldclusterMem);
+	  //LOG.info("node "+node+" pmem "+oldMem+" cluster "+oldclusterMem);
 	  //update node pmem
 	  counterMap.get(node).inc(-oldMem+utilization.getPhysicalMemory());
 	  //update cluster pmem
@@ -715,11 +716,12 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
 
     @Override
     public void run() {
+      //wait untill it starts running
+     
       if(running) {
-        
-        String metrics = web.generateRealTimeTrackingMetrics();
         // output
         try {
+          String metrics = web.generateRealTimeTrackingMetrics();	
           if(firstLine) {
             metricsLogBW.write(metrics + EOL);
             firstLine = false;
@@ -728,7 +730,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
           }
           metricsLogBW.flush();
         } catch (Exception e) {
-          LOG.info("exception found"); 	
+          LOG.info("exception found "+e.toString()); 	
           e.printStackTrace();
         }
       }

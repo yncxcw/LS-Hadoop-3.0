@@ -708,6 +708,7 @@ final public class ResourceSchedulerWrapper
 
     @Override
     public void run() {
+     	
       if(running) {
         // all WebApp to get real tracking json
         String metrics = web.generateRealTimeTrackingMetrics();
