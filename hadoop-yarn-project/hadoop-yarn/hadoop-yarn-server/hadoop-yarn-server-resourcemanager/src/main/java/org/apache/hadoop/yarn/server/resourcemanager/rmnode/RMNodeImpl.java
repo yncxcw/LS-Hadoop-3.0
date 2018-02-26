@@ -391,6 +391,14 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
     this.nodeUpdateQueue = new ConcurrentLinkedQueue<UpdatedContainerInfo>();
 
     this.containerAllocationExpirer = context.getContainerAllocationExpirer();
+    
+    //initialize utilization
+    nodeUtilization =
+            ResourceUtilization.newInstance(0,0,0); 
+    
+    containersUtilization=
+    		ResourceUtilization.newInstance(0,0,0);
+    
   }
 
   @Override

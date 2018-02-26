@@ -496,7 +496,7 @@ public class SLSWebApp extends HttpServlet {
     }
     sb.append("}");
     
-    LOG.info("end generating rael time track");
+   
     return sb.toString();
   }
 

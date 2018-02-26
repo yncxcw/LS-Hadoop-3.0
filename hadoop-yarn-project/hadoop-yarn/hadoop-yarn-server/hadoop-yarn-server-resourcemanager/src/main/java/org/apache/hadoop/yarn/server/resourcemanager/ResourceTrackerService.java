@@ -545,6 +545,30 @@ public class ResourceTrackerService extends AbstractService implements
       return YarnServerBuilderUtils.newNodeHeartbeatResponse(
           NodeAction.SHUTDOWN, message);
     }
+    
+    long usedPhysical=0;
+    for(NodeId node : this.rmContext.getRMNodes().keySet()){
+    	//LOG.info("track-node1: "+node);
+    	usedPhysical+= this.rmContext.getRMNodes().get(node).getNodeUtilization().getPhysicalMemory();
+    }
+    
+    long usedContainer=0;
+    for(NodeId node : this.rmContext.getRMNodes().keySet()){
+    	//LOG.info("track-node2: "+node);
+    	usedContainer+= this.rmContext.getRMNodes().get(node).getAggregatedContainersUtilization().getPhysicalMemory();
+    }
+    
+    long allocated=0;
+    for(NodeId node : this.rmContext.getRMNodes().keySet()){
+    	//LOG.info("track-node3: "+node);
+    	allocated+= this.rmContext.getScheduler().getSchedulerNode(node).getAllocatedResource().getMemorySize();
+    }
+    
+    LOG.info("usedPhysical  "+usedPhysical);
+    LOG.info("usedContainer "+usedContainer);
+    LOG.info("allocated     "+allocated);
+    
+    
 
     // Heartbeat response
     NodeHeartbeatResponse nodeHeartBeatResponse = YarnServerBuilderUtils
