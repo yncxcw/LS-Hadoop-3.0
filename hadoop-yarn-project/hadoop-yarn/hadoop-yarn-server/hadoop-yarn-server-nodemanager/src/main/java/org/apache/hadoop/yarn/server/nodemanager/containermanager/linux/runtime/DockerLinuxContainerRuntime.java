@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.AccessControlList;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.nodemanager.ContainerExecutor;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
@@ -461,6 +462,15 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
             CGROUPS_ROOT_DIRECTORY + ":ro", false);
     List<String> allDirs = new ArrayList<>(containerLocalDirs);
 
+    //for opportunistic containers, we only allows oom-killer works on opp containers
+    if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
+    		== ExecutionType.OPPORTUNISTIC){
+      runCommand.oomScore(1000);	
+    }else{
+      runCommand.oomScore(0); 	
+    }
+    
+    
     allDirs.addAll(filecacheDirs);
     allDirs.add(containerWorkDir.toString());
     allDirs.addAll(containerLogDirs);

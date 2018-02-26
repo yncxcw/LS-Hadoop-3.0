@@ -48,6 +48,11 @@ public class DockerRunCommand extends DockerCommand {
     super.addCommandArguments("-d");
     return this;
   }
+  
+  public DockerRunCommand oomScore(int score){
+	 super.addCommandArguments("--oom-score-adj="+String.valueOf(score)); 
+	 return this;
+  }
 
   public DockerRunCommand setContainerWorkDir(String workdir) {
     super.addCommandArguments("--workdir=" + workdir);
