@@ -415,7 +415,7 @@ public class NMSimulator extends TaskRunner.Task {
         		  }
         	}
         	//if it is not queued, remove it from running queue
-        	if(!found)
+        	if(!found && runningContainers.containsKey(containerId))
         	   removeContainer(runningContainers.get(containerId));
           }
         }
