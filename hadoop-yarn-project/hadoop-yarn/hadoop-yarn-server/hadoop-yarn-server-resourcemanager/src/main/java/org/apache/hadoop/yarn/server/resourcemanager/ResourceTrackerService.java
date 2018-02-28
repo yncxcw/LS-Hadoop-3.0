@@ -112,6 +112,8 @@ public class ResourceTrackerService extends AbstractService implements
 
   private int minAllocMb;
   private int minAllocVcores;
+  
+  private int batchLog=0;
 
   private DecommissioningNodesWatcher decommissioningWatcher;
 
@@ -548,7 +550,11 @@ public class ResourceTrackerService extends AbstractService implements
     
     
     //Not for simulation
-    /*
+    synchronized(this){
+    if(this.batchLog < this.rmContext.getRMNodes().size()){
+       this.batchLog++;	
+    }else{
+       this.batchLog=0;
     long usedPhysical=0;
     for(NodeId node : this.rmContext.getRMNodes().keySet()){
     	//LOG.info("track-node1: "+node);
@@ -570,11 +576,11 @@ public class ResourceTrackerService extends AbstractService implements
     	     allocated+= this.rmContext.getScheduler().getSchedulerNode(node).getAllocatedResource().getMemorySize();
     }
     
-    //LOG.info("usedPhysical  "+usedPhysical);
-    //LOG.info("usedContainer "+usedContainer);
-    //LOG.info("allocated     "+allocated);
-    
-    */
+    LOG.info("usedPhysical  "+usedPhysical);
+    LOG.info("usedContainer "+usedContainer);
+    LOG.info("allocated     "+allocated);
+    }
+   }
 
     // Heartbeat response
     NodeHeartbeatResponse nodeHeartBeatResponse = YarnServerBuilderUtils
