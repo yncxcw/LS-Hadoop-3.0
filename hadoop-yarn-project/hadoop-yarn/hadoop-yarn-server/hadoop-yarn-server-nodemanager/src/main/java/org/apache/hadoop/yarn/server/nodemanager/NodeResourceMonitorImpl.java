@@ -158,14 +158,14 @@ public class NodeResourceMonitorImpl extends AbstractService implements
     	//try to launch or kill OPP containers  
         ContainerScheduler containerScheduler=context.getContainerManager().getContainerScheduler();
         //try to kill containers  
-        boolean isKilled=containerScheduler.tryToKillOppContainers();
+        boolean isNotAvailable=containerScheduler.isPmNotAvailable();
         //try to launch containers		
         int queuingLength=containerScheduler.getNumQueuedOpportunisticContainers();
         int runningLength=containerScheduler.getRunningContainers();
         
         LOG.info("queuing: "+queuingLength+" running: "+runningLength);
         
-        if(queuingLength > 0 && !isKilled){
+        if(queuingLength > 0 && !isNotAvailable){
           LOG.info("monitor try to launch containers");	
           containerScheduler.startPendingContainers(true);
          }

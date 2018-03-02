@@ -49,6 +49,11 @@ public class DockerRunCommand extends DockerCommand {
     return this;
   }
   
+  public DockerRunCommand swappiness(int swappiness){
+	super.addCommandArguments("--memory-swappiness="+String.valueOf(swappiness)); 
+	return this;  
+  }
+  
   public DockerRunCommand oomScore(int score){
 	 super.addCommandArguments("--oom-score-adj="+String.valueOf(score)); 
 	 return this;

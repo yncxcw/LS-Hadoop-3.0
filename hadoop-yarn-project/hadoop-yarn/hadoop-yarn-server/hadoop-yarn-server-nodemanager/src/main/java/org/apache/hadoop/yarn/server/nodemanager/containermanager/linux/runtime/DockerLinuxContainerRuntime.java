@@ -466,8 +466,10 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
     if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
     		== ExecutionType.OPPORTUNISTIC){
       runCommand.oomScore(1000);	
+      runCommand.swappiness(0);
     }else{
-      runCommand.oomScore(0); 	
+      runCommand.oomScore(-1000);
+      runCommand.swappiness(100);
     }
     
     

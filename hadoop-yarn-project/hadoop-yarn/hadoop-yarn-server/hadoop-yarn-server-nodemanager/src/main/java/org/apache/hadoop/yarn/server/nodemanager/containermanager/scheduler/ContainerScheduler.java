@@ -278,6 +278,7 @@ public class ContainerScheduler extends AbstractService implements
   public boolean tryToKillOppContainers(){
 	long slack = this.utilizationTracker.isCommitmentOverThreshold(0);
 	if(slack < 0){
+		
 		slack=-slack;
 		List<Container> extraOpportContainersToKill = 
 				pickOpportunisticContainersToKill(slack);
@@ -293,6 +294,7 @@ public class ContainerScheduler extends AbstractService implements
 		          ,contToKill.getContainerId()
 		     );
 		}
+		
 		return true; 
 	}else{
 		
@@ -300,6 +302,17 @@ public class ContainerScheduler extends AbstractService implements
 	}
   }
 
+  public boolean isPmNotAvailable(){
+		long slack = this.utilizationTracker.isCommitmentOverThreshold(0);
+		if(slack < 0){
+			return true; 
+		}else{
+			
+		    return false;
+		}
+  }
+  
+  
   private boolean startContainersFromQueue(
       Collection<Container> queuedContainers,
       boolean launchedByMonitor) {
