@@ -465,7 +465,8 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
     //for opportunistic containers, we only allows oom-killer works on opp containers
     if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
     		== ExecutionType.OPPORTUNISTIC){
-      runCommand.oomScore(1000);	
+      int appId=ctx.getContainer().getContainerId().getApplicationAttemptId().getApplicationId().getId();	
+      runCommand.oomScore(900+appId%100);
       runCommand.swappiness(0);
     }else{
       runCommand.oomScore(-1000);
