@@ -470,7 +470,12 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
       runCommand.swappiness(0);
     }else{
       runCommand.oomScore(-1000);
-      runCommand.swappiness(100);
+      int cntId=ctx.getContainer().getContainerId().getId();
+      if(cntId == 1){
+    	 runCommand.swappiness(0);  
+      }else{
+         runCommand.swappiness(100);
+      }
     }
     
     
