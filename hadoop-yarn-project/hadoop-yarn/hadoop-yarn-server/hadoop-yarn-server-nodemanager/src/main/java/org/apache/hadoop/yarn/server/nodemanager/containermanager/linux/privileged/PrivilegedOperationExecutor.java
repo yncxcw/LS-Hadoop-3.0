@@ -148,6 +148,7 @@ public class PrivilegedOperationExecutor {
         workingDir, env, 0L, inheritParentEnv);
 
     try {
+      LOG.info("try to execute privilaged command");	
       exec.execute();
       if (LOG.isDebugEnabled()) {
         LOG.debug("command array:");
