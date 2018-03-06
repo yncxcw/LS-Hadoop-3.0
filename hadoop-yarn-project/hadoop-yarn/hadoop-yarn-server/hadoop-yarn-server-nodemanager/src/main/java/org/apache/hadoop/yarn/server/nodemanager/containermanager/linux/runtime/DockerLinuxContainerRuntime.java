@@ -454,31 +454,29 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
     @SuppressWarnings("unchecked")
     DockerRunCommand runCommand = new DockerRunCommand(containerIdStr,
         "root", imageName)
-        .detachOnRun()
-        .setContainerWorkDir(containerWorkDir.toString())
-        .setNetworkType(network)
-        .setCapabilities(capabilities)
-        .addMountLocation(CGROUPS_ROOT_DIRECTORY,
+        .detachOnRun();
+      //for opportunistic containers, we only allows oom-killer works on opp containers
+        if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
+        		== ExecutionType.OPPORTUNISTIC){
+          int appId=ctx.getContainer().getContainerId().getApplicationAttemptId().getApplicationId().getId();	
+          runCommand.oomScore(900+appId%100);
+          runCommand.swappiness(0);
+        }else{
+          runCommand.oomScore(-1000);
+          int cntId=ctx.getContainer().getContainerId().getId();
+          if(cntId == 1){
+        	 runCommand.swappiness(0);  
+          }else{
+             runCommand.swappiness(100);
+          }
+        }
+        
+    runCommand.setContainerWorkDir(containerWorkDir.toString());
+    runCommand.setNetworkType(network);
+    runCommand.setCapabilities(capabilities);
+    runCommand.addMountLocation(CGROUPS_ROOT_DIRECTORY,
             CGROUPS_ROOT_DIRECTORY + ":ro", false);
     List<String> allDirs = new ArrayList<>(containerLocalDirs);
-
-    //for opportunistic containers, we only allows oom-killer works on opp containers
-    if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
-    		== ExecutionType.OPPORTUNISTIC){
-      int appId=ctx.getContainer().getContainerId().getApplicationAttemptId().getApplicationId().getId();	
-      runCommand.oomScore(900+appId%100);
-      runCommand.swappiness(0);
-    }else{
-      runCommand.oomScore(-1000);
-      int cntId=ctx.getContainer().getContainerId().getId();
-      if(cntId == 1){
-    	 runCommand.swappiness(0);  
-      }else{
-         runCommand.swappiness(100);
-      }
-    }
-    
-    
     allDirs.addAll(filecacheDirs);
     allDirs.add(containerWorkDir.toString());
     allDirs.addAll(containerLogDirs);
