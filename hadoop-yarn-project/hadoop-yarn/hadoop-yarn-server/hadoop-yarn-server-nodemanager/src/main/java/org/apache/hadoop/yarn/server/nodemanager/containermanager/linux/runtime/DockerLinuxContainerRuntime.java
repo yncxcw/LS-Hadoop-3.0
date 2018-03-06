@@ -532,6 +532,7 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
       runCommand.setOverrideCommandWithArgs(overrideCommands);
     }
 
+    LOG.info("docker command: "+runCommand.toString());
     String commandFile = dockerClient.writeCommandToTempFile(runCommand,
         containerIdStr);
     PrivilegedOperation launchOp = new PrivilegedOperation(
