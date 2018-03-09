@@ -596,6 +596,10 @@ public class ProcfsBasedProcessTree extends ResourceCalculatorProcessTree {
     return processTree.containsKey(pid);
   }
 
+  public int getRunningProcess(){
+	  return processTree.size();
+  }
+  
   /**
    *
    * Class containing information of a process.

@@ -298,7 +298,6 @@ public class ContainerLaunch implements Callable<Integer> {
           .setContainerLogDirs(containerLogDirs)
           .build());
     } catch (Throwable e) {
-      LOG.warn("Failed to launch container.", e);
       dispatcher.getEventHandler().handle(new ContainerExitEvent(
           containerID, ContainerEventType.CONTAINER_EXITED_WITH_FAILURE, ret,
           e.getMessage()));

@@ -124,8 +124,6 @@ public class ContainerScheduler extends AbstractService implements
         	context.getConf().getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
         		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
     
-    
- 
   }
 
   @VisibleForTesting

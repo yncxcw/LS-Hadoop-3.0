@@ -456,12 +456,12 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
         "root", imageName)
         .detachOnRun();
       //for opportunistic containers, we only allows oom-killer works on opp containers
-        if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
+     if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
         		== ExecutionType.OPPORTUNISTIC){
           int appId=ctx.getContainer().getContainerId().getApplicationAttemptId().getApplicationId().getId();	
           runCommand.oomScore(900+appId%100);
           runCommand.swappiness(0);
-        }else{
+     }else{
           runCommand.oomScore(-1000);
           int cntId=ctx.getContainer().getContainerId().getId();
           if(cntId == 1){
@@ -469,7 +469,7 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
           }else{
              runCommand.swappiness(100);
           }
-        }
+     }
         
     runCommand.setContainerWorkDir(containerWorkDir.toString());
     runCommand.setNetworkType(network);
@@ -530,7 +530,7 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
       runCommand.setOverrideCommandWithArgs(overrideCommands);
     }
 
-    LOG.info("docker command: "+runCommand.toString());
+    //LOG.info("docker command: "+runCommand.toString());
     String commandFile = dockerClient.writeCommandToTempFile(runCommand,
         containerIdStr);
     PrivilegedOperation launchOp = new PrivilegedOperation(

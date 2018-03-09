@@ -37,6 +37,8 @@ import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.server.nodemanager.ContainerExecutor;
 import org.apache.hadoop.yarn.server.nodemanager.Context;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerEventType;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerExitEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerImpl;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerKillEvent;
 import org.apache.hadoop.yarn.server.nodemanager.timelineservice.NMTimelinePublisher;
@@ -486,7 +488,7 @@ public class ContainersMonitorImpl extends AbstractService implements
           
           ResourceCalculatorProcessTree pTree = ptInfo.getProcessTree();
           pTree.updateProcessTree();    // update process-tree
-          LOG.info("container "+containerId+"process tree: "+pTree.toString());
+          //LOG.info("container "+containerId+"process tree: "+pTree.toString());
           long currentVmemUsage = pTree.getVirtualMemorySize();
           long currentPmemUsage = pTree.getRssMemorySize();
 

@@ -59,6 +59,16 @@ public abstract class ResourceCalculatorProcessTree extends Configured {
    *
    */
   public abstract void updateProcessTree();
+  
+  
+  /**
+   * get the # of running process in this container
+   * 
+   */
+  
+  public int getRunningProcess(){
+	   return 0;
+  }
 
   /**
    * Get a dump of the process-tree.

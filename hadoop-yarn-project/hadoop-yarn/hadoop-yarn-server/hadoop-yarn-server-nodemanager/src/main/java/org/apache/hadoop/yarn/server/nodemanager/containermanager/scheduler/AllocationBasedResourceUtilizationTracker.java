@@ -69,7 +69,7 @@ public class AllocationBasedResourceUtilizationTracker implements
     this.scheduler = scheduler;
     this.context=context;
   
-    LOG.info("threashold: "+this.pMemThreshold);
+
     //we set recent 20 opp container as our reference, make this parameter tunable
     this.recentOppProfileTime = new FixedSizeQueue(20);
     this.recentOppProfilePmem = new FixedSizeQueue(20);
@@ -206,49 +206,60 @@ public class AllocationBasedResourceUtilizationTracker implements
   private boolean hasResourcesAvailable(long pMemBytes, long vMemBytes,
       int cpuVcores) {
 	LOG.info("checking resource: "+this.containersAllocation);  
-    // Check physical memory.
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("pMemCheck [current={} + asked={} > allowed={}]",
-          this.containersAllocation.getPhysicalMemory(),
-          (pMemBytes >> 20),
-          (getContainersMonitor().getPmemAllocatedForContainers() >> 20));
-    }
+   
     
     //default policy is to check the pmem
     if (this.containersAllocation.getPhysicalMemory() +
         (int) (pMemBytes >> 20) >
         (int) (getContainersMonitor()
             .getPmemAllocatedForContainers() >> 20)) {
+    	 // Check physical memory.
+        //if(LOG.isDebugEnabled()) 
+        {
+          LOG.info("pMemCheck [current={} + asked={} > allowed={}]",
+              this.containersAllocation.getPhysicalMemory(),
+              (pMemBytes >> 20),
+              (getContainersMonitor().getPmemAllocatedForContainers() >> 20));
+        }	
       return false;
     }
 
     
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("before vMemCheck" +
-              "[isEnabled={}, current={} + asked={} > allowed={}]",
-          getContainersMonitor().isVmemCheckEnabled(),
-          this.containersAllocation.getVirtualMemory(), (vMemBytes >> 20),
-          (getContainersMonitor().getVmemAllocatedForContainers() >> 20));
-    }
+    
+    /*  In our current implementation, we only focus on the pmem availability
+    
     // Check virtual memory.
     if (getContainersMonitor().isVmemCheckEnabled() &&
         this.containersAllocation.getVirtualMemory() +
             (int) (vMemBytes >> 20) >
             (int) (getContainersMonitor()
                 .getVmemAllocatedForContainers() >> 20)) {
+    	if (LOG.isDebugEnabled()) 
+        {
+          LOG.info("before vMemCheck" +
+                  "[isEnabled={}, current={} + asked={} > allowed={}]",
+              getContainersMonitor().isVmemCheckEnabled(),
+              this.containersAllocation.getVirtualMemory(), (vMemBytes >> 20),
+              (getContainersMonitor().getVmemAllocatedForContainers() >> 20));
+        }	
       return false;
     }
 
     float vCores = (float) cpuVcores /
         getContainersMonitor().getVCoresAllocatedForContainers();
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("before cpuCheck [asked={} > allowed={}]",
-          this.containersAllocation.getCPU(), vCores);
-    }
+   
     // Check CPU.
     if (this.containersAllocation.getCPU() + vCores > 1.0f) {
+      if (LOG.isDebugEnabled()) 
+      {
+          LOG.info("before cpuCheck [asked={} > allowed={}]",
+              this.containersAllocation.getCPU(), vCores);
+      }	
       return false;
     }
+    
+    */
+    
     return true;
   }
 
