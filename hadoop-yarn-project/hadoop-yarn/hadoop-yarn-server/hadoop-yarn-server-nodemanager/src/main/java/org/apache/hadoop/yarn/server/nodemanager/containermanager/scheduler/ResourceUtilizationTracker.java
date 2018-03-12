@@ -77,4 +77,9 @@ public interface ResourceUtilizationTracker {
    */
   
   void syncEstimatedMemory();
+  
+  /*
+   * Return the most recent synctime.
+   */
+  long getEstimatedSyncPeriod();
 }

@@ -188,6 +188,9 @@ public class AllocationBasedResourceUtilizationTracker implements
   //what if we only consider realtime physical memory usage
   private boolean hasResourcesAvailable(long pMemBytes){
 	  
+	  //synthe profiled memory before launching any new containers
+	  syncEstimatedMemory();
+	  
 	  LOG.info("threashold: "+this.pMemThreshold);
 	   
 	  if(estimatedMemAvailable < pMemBytes + pMemThreshold){
@@ -287,12 +290,12 @@ public long isCommitmentOverThreshold(long request) {
 public void addProfiledTimeAndPmem(long time, long pmem) {
 	LOG.info("profileadd "+time+" "+pmem);
 	this.recentOppProfilePmem.add(pmem);
-	this.recentOppProfileTime.add(time);
+    //here, we use the 1/2 of task runtime.
+	this.recentOppProfileTime.add(time/2);
 	
 }
 
 //only called when a new container will be launched
-@Override
 public void syncEstimatedMemory() {
 	//check  sync period in terms of ms
 	long now = clock.getTime();
@@ -308,6 +311,12 @@ public void syncEstimatedMemory() {
 		LOG.info("profile syn: "+this.estimatedSyncPeriod);
 	}
 	
+}
+
+
+@Override
+public long getEstimatedSyncPeriod(){
+	return this.estimatedSyncPeriod;
 }
 
 

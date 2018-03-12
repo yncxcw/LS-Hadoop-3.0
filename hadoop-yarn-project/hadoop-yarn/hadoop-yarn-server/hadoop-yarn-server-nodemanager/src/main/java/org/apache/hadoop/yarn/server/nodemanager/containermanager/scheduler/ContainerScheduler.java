@@ -70,6 +70,8 @@ public class ContainerScheduler extends AbstractService implements
   private final Context context;
   private final int maxOppQueueLength;
   
+  private long lastContainerKillingTime=0;
+  
   private boolean enablePmemLaunch;
   
   private static Clock clock = SystemClock.getInstance();
@@ -207,6 +209,17 @@ public class ContainerScheduler extends AbstractService implements
         metrics.getRunningOpportunisticContainers());
     return this.opportunisticContainersStatus;
   }
+  
+  
+  public boolean shouldThrottleLaunch(){
+	  long now=clock.getTime();
+	  if(now - lastContainerKillingTime < utilizationTracker.getEstimatedSyncPeriod()){
+		LOG.info("start throttling");
+	    return true;
+	  }
+	  else
+		return false;
+  }
 
   private void onContainerCompleted(Container container) {
  
@@ -244,6 +257,10 @@ public class ContainerScheduler extends AbstractService implements
 		 contMaxPmem = (contMaxPmem << 20);
 		 LOG.info("nofinish "+contRuntime+" "+contMaxPmem);
 		 utilizationTracker.addProfiledTimeAndPmem(contRuntime, contMaxPmem);
+		 
+		 //this opp container is killed by kernel, we update its killing time
+    	}else if(completedContainer.cloneAndGetContainerStatus().getExitStatus()!=0 ){
+    	     lastContainerKillingTime = clock.getTime();
     	}
 	}
    
@@ -258,17 +275,16 @@ public class ContainerScheduler extends AbstractService implements
   }
 
   public void startPendingContainers(boolean launchedByMonitor) {
-	  
-	// Synch estimated memory usage
-	this.utilizationTracker.syncEstimatedMemory();
+	
     // Start pending guaranteed containers, if resources available.
-	LOG.info("gua size "+queuedGuaranteedContainers.size()+" opp size "+queuedOpportunisticContainers.size());
+	//LOG.info("gua size "+queuedGuaranteedContainers.size()+" opp size "+queuedOpportunisticContainers.size());
     boolean resourcesAvailable =
         startContainersFromQueue(queuedGuaranteedContainers.values(),launchedByMonitor);
     // Start opportunistic containers, if resources available.
     if (resourcesAvailable) {
-      startContainersFromQueue(queuedOpportunisticContainers.values(),launchedByMonitor);
-    }
+        startContainersFromQueue(queuedOpportunisticContainers.values(),launchedByMonitor);
+    	  
+     }
   }
   
   //based on the pmem usage, kill opp containers.
@@ -317,6 +333,11 @@ public class ContainerScheduler extends AbstractService implements
 	int launchSize=0;
     Iterator<Container> cIter = queuedContainers.iterator();
     boolean resourcesAvailable = true;
+    
+    //if this is a pm launch, we should throttle if a recent killed container is detected
+    if(enablePmemLaunch && shouldThrottleLaunch())
+    	return false;
+    
     while (cIter.hasNext() && resourcesAvailable) {
       Container container = cIter.next();
       if (this.utilizationTracker.hasResourcesAvailable(container)) {
@@ -384,8 +405,12 @@ public class ContainerScheduler extends AbstractService implements
   	  startAllocatedContainer(container);	
   	}else{
   		
+  		//empty queue
   	    if(queuedOpportunisticContainers.isEmpty() &&
-  		        this.utilizationTracker.hasResourcesAvailable(container)){
+  	    		//enough resource
+  		        this.utilizationTracker.hasResourcesAvailable(container) &&
+  		        //no recent killed container detected
+  		        !shouldThrottleLaunch()){
   			startAllocatedContainer(container);
   		    LOG.info("enough resource, launch container "+container.getContainerId()+" type: "+container.getContainerTokenIdentifier().getExecutionType());
   		}else{
@@ -414,8 +439,6 @@ public class ContainerScheduler extends AbstractService implements
   @VisibleForTesting
   protected void scheduleContainer(Container container) {
     //not supported opportunistic contaienrs
-	// Synch estimated memory usage
-	this.utilizationTracker.syncEstimatedMemory();  
 	//default case without opp containers
     if (maxOppQueueLength <= 0) {
       LOG.info("opp contianer is not supported");
@@ -424,6 +447,7 @@ public class ContainerScheduler extends AbstractService implements
     }
     //rewrite launch logic, could introduce bugs
     if(enablePmemLaunch){
+    	
     	this.scheduleContainerForPMLaunch(container);
     }else{
     	this.scheduleContainerForDefault(container);
