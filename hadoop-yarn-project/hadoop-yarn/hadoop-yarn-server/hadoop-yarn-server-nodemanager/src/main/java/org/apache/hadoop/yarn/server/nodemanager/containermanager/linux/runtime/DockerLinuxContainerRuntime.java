@@ -550,6 +550,11 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
             logDirs),
         commandFile,
         resourcesOpts);
+    
+    LOG.info("launchOP :"+launchOp.toString());
+    LOG.info("runAsUser:"+runAsUser);
+    LOG.info("user: "+ctx.getExecutionAttribute(USER));
+    
 
     String tcCommandFile = ctx.getExecutionAttribute(TC_COMMAND_FILE);
 
