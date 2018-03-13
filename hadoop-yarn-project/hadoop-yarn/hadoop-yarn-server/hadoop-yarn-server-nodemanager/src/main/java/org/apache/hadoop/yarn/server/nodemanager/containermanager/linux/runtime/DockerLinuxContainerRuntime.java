@@ -424,8 +424,9 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
     validateImageName(imageName);
 
     String containerIdStr = container.getContainerId().toString();
-    String runAsUser = ctx.getExecutionAttribute(RUN_AS_USER);
-    
+    //test with USER
+    //String runAsUser = ctx.getExecutionAttribute(RUN_AS_USER);
+    String runAsUser = ctx.getExecutionAttribute(USER);
     Path containerWorkDir = ctx.getExecutionAttribute(CONTAINER_WORK_DIR);
     //List<String> -> stored as List -> fetched/converted to List<String>
     //we can't do better here thanks to type-erasure
