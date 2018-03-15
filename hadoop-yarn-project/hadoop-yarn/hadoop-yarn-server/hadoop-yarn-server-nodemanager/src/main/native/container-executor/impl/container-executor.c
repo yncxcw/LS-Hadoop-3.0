@@ -1219,6 +1219,8 @@ char* sanitize_docker_command(const char *line) {
     {"cap-drop", required_argument, 0, 'o' },
     {"device", required_argument, 0, 'i' },
     {"detach", required_argument, 0, 't' },
+	{"memory-swappiness",required_argument,0,'s'},
+	{"oom-score-adj",required_argument,0,'j'},
     {0, 0, 0, 0}
   };
 
@@ -1263,6 +1265,12 @@ char* sanitize_docker_command(const char *line) {
       case 'o':
         quote_and_append_arg(&output, &output_size, "--cap-drop=", optarg);
         break;
+      case 's':
+    	quote_and_append_arg(&output, &output_size, "--memory-swappiness=", optarg);
+    	break;
+      case 'j':
+    	quote_and_append_arg(&output, &output_size, "--oom-score-adj=", optarg);
+    	break;
       case 'd':
         strcat(output, "-d ");
         break;
