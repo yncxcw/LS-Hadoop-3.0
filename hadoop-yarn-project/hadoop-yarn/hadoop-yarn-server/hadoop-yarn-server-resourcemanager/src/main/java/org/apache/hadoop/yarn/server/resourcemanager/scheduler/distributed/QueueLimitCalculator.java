@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.yarn.server.resourcemanager.scheduler.distributed;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.server.api.records.ContainerQueuingLimit;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.distributed.NodeQueueLoadMonitor.ClusterNode;
@@ -39,6 +41,9 @@ public class QueueLimitCalculator {
   class Stats {
     private final AtomicInteger mean = new AtomicInteger(0);
     private final AtomicInteger stdev = new AtomicInteger(0);
+    private final AtomicInteger qsum   =new AtomicInteger(0);
+    private final AtomicInteger qmax   = new AtomicInteger(0);
+    private final AtomicInteger qmin   = new AtomicInteger(0);
 
     /**
      * Not thread safe. Caller should synchronize on sorted nodes list.
@@ -48,9 +53,21 @@ public class QueueLimitCalculator {
       if (sortedNodes.size() > 0) {
         // Calculate mean
         int sum = 0;
+        int max = 0;
+        int min = 0;
         for (NodeId n : sortedNodes) {
           sum += getMetric(getNode(n));
+          
+          if(getMetric(getNode(n)) > max)
+        	  max=getMetric(getNode(n));
+          
+          if(getMetric(getNode(n)) < min)
+        	  min=getMetric(getNode(n));
+        	  
         }
+        qmax.set(max);
+        qmin.set(min);
+        qsum.set(sum);
         mean.set(sum / sortedNodes.size());
 
         // Calculate stdev
@@ -63,6 +80,8 @@ public class QueueLimitCalculator {
             (int) Math.round(Math.sqrt(
                 sqrSumMean / (float) sortedNodes.size())));
       }
+      
+      
     }
 
     private ClusterNode getNode(NodeId nId) {
@@ -81,6 +100,20 @@ public class QueueLimitCalculator {
     public int getStdev() {
       return stdev.get();
     }
+    
+    public int getMax(){
+      return qmax.get();	
+    }
+    
+    public int getSum(){
+      return qsum.get();	
+    }
+    
+    public int getMin(){
+      return qmin.get();	
+    }
+    
+    
   }
 
   private final NodeQueueLoadMonitor nodeSelector;
@@ -88,6 +121,8 @@ public class QueueLimitCalculator {
   private final int rangeMin;
   private final int rangeMax;
   private final Stats stats = new Stats();
+  
+  final static Log LOG = LogFactory.getLog(QueueLimitCalculator.class);
 
   QueueLimitCalculator(NodeQueueLoadMonitor selector, float sigma,
       int rangeMin, int rangeMax) {
@@ -102,6 +137,7 @@ public class QueueLimitCalculator {
   }
 
   void update() {
+	LOG.info("queuing stats: "+stats.getSum()+"  "+stats.getMax()+"  "+stats.getMin()+"  "+stats.getMean());
     this.stats.update();
   }
 

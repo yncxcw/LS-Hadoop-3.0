@@ -123,7 +123,8 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
         }
         if (thresholdCalculator != null) {
           thresholdCalculator.update();
-        }
+                 
+          }
       } finally {
         writeLock.unlock();
       }
