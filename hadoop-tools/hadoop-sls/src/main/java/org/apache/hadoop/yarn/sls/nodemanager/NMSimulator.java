@@ -96,10 +96,13 @@ public class NMSimulator extends TaskRunner.Task {
   private int RESPONSE_ID = 1;
   //checked by virtual memory of physical memory
   private boolean byVirtual=false;
+  //queuing limit for nodemanager
+  private int queuingLimit;
+  
   private final static Logger LOG = Logger.getLogger(NMSimulator.class);
   
   public void init(String nodeIdStr, int memory, int cores,
-          int dispatchTime, int heartBeatInterval, ResourceManager rm, boolean byVirtual)
+          int dispatchTime, int heartBeatInterval, ResourceManager rm, boolean byVirtual, int queuingLimit)
           throws IOException, YarnException {
     super.init(dispatchTime, dispatchTime + 1000000L * heartBeatInterval,
             heartBeatInterval);
@@ -108,6 +111,9 @@ public class NMSimulator extends TaskRunner.Task {
     this.node = NodeInfo.newNodeInfo(rackHostName[0], rackHostName[1], 
                   BuilderUtils.newResource(memory, cores));
     this.byVirtual=byVirtual;
+    
+    this.queuingLimit=queuingLimit;
+    
     this.rm = rm;
     // init data structures
     completedContainerList=
@@ -169,7 +175,7 @@ public class NMSimulator extends TaskRunner.Task {
 	   }
 	  }
 	  oppQueueopps=oppContainerQueuing.size();
-	  //TODO theoritical the oppQueues = queued guranteed + queued opp, we do a simlicity here.
+	  //TODO theoritical the oppQueues = queued guaranteed + queued opp, we do a simplicity here.
 	  oppQueues= oppQueueopps;
 	  //TODO how to estimate this value
 	  this.opportunisticContainersStatus.setEstimatedQueueWaitTime(0);
@@ -181,10 +187,10 @@ public class NMSimulator extends TaskRunner.Task {
 	  
   }
   
-  //TODO check if there are enough resoruce for new laucned container
+  //TODO check if there are enough resource for new launched container
   /*
-   * if byvirtual is true, checked is performed by suing virual memory<requested at launch>
-   * otherwise, check is performed by using physical memory<update prediotically>
+   * if byvirtual is true, checked is performed by suing virtual memory<requested at launch>
+   * otherwise, check is performed by using physical memory<update periodically>
    */
   public long checkMemoryAvailable(ContainerSimulator container){
 	  
@@ -258,7 +264,9 @@ public class NMSimulator extends TaskRunner.Task {
 	        LOG.debug(MessageFormat.format("Container {0} has completed",
 	                cs.getId()));
 	      }
-	    } 
+	    }
+	   //after some containers are finished, there could be some opportunities to launch opp containers
+	   launchQueuedOppContainers(); 
   }
   
   //remove a running container due to preemption or failure, updating node resources
@@ -287,6 +295,7 @@ public class NMSimulator extends TaskRunner.Task {
 		  Entry<Long, ContainerSimulator> entry = entryIt.next();
 		  ContainerSimulator cs=entry.getValue();
 		 if(checkMemoryAvailable(cs) > 0){
+			 LOG.info("launch opp container "+cs.getId());
 			 luanchContainer(cs);
 	    	 //remove from the queue.
 	    	 entryIt.remove();
@@ -295,8 +304,6 @@ public class NMSimulator extends TaskRunner.Task {
 	    	break;
 	      } 
 	  }
-	  
-	  //LOG.info("queue size "+oppContainerQueuing.size() + " host "+getNode().getHostName());
 	 }
   }
   /**
@@ -343,15 +350,19 @@ public class NMSimulator extends TaskRunner.Task {
     //LOG.info("node: "+node.getHostName()+" newly pmem "+nodeUsedMemory);
     nodeUtilization.setPhysicalMemory((int)nodeUsedMemory);
     
+    //only works for physical memory
+    if(!byVirtual){
     //kill overcommit memory during runtime
-    long overcommitMemory = checkMemoryAvailable(null);
-    if(overcommitMemory < 0){
+     long overcommitMemory = checkMemoryAvailable(null);
+     if(overcommitMemory < 0){
     	killContainersToFreeMemory(-overcommitMemory);
-    }
-    //launch queued opp containers
-    if(overcommitMemory > 0){
+     }
+     //launch queued opp containers
+     if(overcommitMemory > 0){
     	launchQueuedOppContainers();
+     }
     }
+    
     //update opp statistics
     updateOppStatistics();
     
@@ -517,13 +528,29 @@ public class NMSimulator extends TaskRunner.Task {
              luanchContainer(cs);
          		 
     	 }else{
+    		 //queuing this container within the limitation of the queu
+    		 if(oppContainerQueuing.size() < queuingLimit){
     		 //queuing this container
     		 LOG.info("queuing container "+container.getId()+" on node "+node.getNodeID()+
-    				  " phy utilization "+nodeUtilization.getPhysicalMemory()+
-    				  " vir utilization "+nodeUtilization.getVirtualMemory());
+    				  " phy utilization " +nodeUtilization.getPhysicalMemory()+
+    				  " vir utilization " +nodeUtilization.getVirtualMemory()+
+    				  " queuing size "    +oppContainerQueuing.size());
     		 synchronized(oppContainerQueuing){
+    			//avoid launch time collision
+    			while(oppContainerQueuing.containsKey(appLaunchTime))
+    				 appLaunchTime++;
     		    oppContainerQueuing.put(appLaunchTime, cs);
     		 }
+    		 
+    		//kill this container
+    		}else{
+    		  LOG.info("killing container because queue is full "+container.getId()+" on node "+node.getNodeID()+
+      				  " phy utilization "+nodeUtilization.getPhysicalMemory()+
+      				  " vir utilization "+nodeUtilization.getVirtualMemory());	
+    		  synchronized(killedContainerList){
+    			 killedContainerList.add(cs.getId());
+    		  } 
+    		}
     	 }
     	//for regular container, no matter how, we need to run it.	 
       }else{

@@ -213,6 +213,8 @@ public class MRAMSimulator extends AMSimulator {
 	    	return schedList.remove(i);
 	    }
 	}
+	
+	
     //no match give up this container	  
 	return null;  
   }
@@ -318,8 +320,8 @@ public class MRAMSimulator extends AMSimulator {
           }
           LOG.info(MessageFormat.format("Application {0} starts a " +
                   "launch a mapper ({1}) o node {2}", appId, container.getId(), container.getNodeId()));
+          
           assignedMaps.put(container.getId(), cs);
-         
           se.getNmMap().get(container.getNodeId())
                   .addNewContainer(container, cs.getLifeTime(),
                 		   cs.getExeType(),cs.getTimes(),cs.getMemories(),simulateStartTimeMS);

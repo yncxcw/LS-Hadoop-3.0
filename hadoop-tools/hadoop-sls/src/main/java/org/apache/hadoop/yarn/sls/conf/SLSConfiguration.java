@@ -63,7 +63,13 @@ public class SLSConfiguration {
  
   public static final String NM_BY_VIRTUAL = NM_PREFIX
           + "by.virtual";
-public static final boolean NM_BY_VIRTUAL_DEFAULT = false;
+  public static final boolean NM_BY_VIRTUAL_DEFAULT = false;
+  
+  public static final String NM_QUEUING_LIMIT=NM_PREFIX
+		  +"queue.limit";
+  
+  public static final int NM_QUEUING_LIMIT_DEFAULT = 10;
+  
   
   // am
   public static final String AM_PREFIX = PREFIX + "am.";

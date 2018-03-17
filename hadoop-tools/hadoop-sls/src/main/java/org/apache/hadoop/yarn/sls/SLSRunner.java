@@ -209,6 +209,11 @@ public class SLSRunner {
     boolean byVirtual= conf.getBoolean(
             SLSConfiguration.NM_BY_VIRTUAL,
             SLSConfiguration.NM_BY_VIRTUAL_DEFAULT);
+    
+    int queuingLimit=conf.getInt(
+    		SLSConfiguration.NM_QUEUING_LIMIT,
+    		SLSConfiguration.NM_QUEUING_LIMIT_DEFAULT
+    		);
 
 
     // nm information (fetch from topology file, or from sls/rumen json file)
@@ -234,7 +239,7 @@ public class SLSRunner {
       // we randomize the heartbeat start time from zero to 1 interval
       NMSimulator nm = new NMSimulator();
       nm.init(hostName, nmMemoryMB, nmVCores, 
-          random.nextInt(heartbeatInterval), heartbeatInterval, rm, byVirtual);
+          random.nextInt(heartbeatInterval), heartbeatInterval, rm, byVirtual,queuingLimit);
       nmMap.put(nm.getNode().getNodeID(), nm);
       runner.schedule(nm);
       rackSet.add(nm.getNode().getRackName());
