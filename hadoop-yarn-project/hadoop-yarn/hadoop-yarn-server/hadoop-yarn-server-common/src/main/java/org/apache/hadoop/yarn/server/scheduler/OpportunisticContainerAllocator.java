@@ -277,7 +277,6 @@ public class OpportunisticContainerAllocator {
             containers.get(anyAsk.getCapability()).size());
 
     List<RemoteNode> nodesForScheduling = new ArrayList<>();
-    LOG.info("opp blacklist "+blacklist);
     for (Entry<String, RemoteNode> nodeEntry : allNodes.entrySet()) {
       // Do not use blacklisted nodes for scheduling.
       if (blacklist.contains(nodeEntry.getKey())) {
@@ -294,7 +293,6 @@ public class OpportunisticContainerAllocator {
     int numAllocated = 0;
     int nextNodeToSchedule = 0;
     for (int numCont = 0; numCont < toAllocate; numCont++) {
-      nextNodeToSchedule++;
       nextNodeToSchedule %= nodesForScheduling.size();
       RemoteNode node = nodesForScheduling.get(nextNodeToSchedule);
       Container container = buildContainer(rmIdentifier, appParams, idCounter,
@@ -306,6 +304,7 @@ public class OpportunisticContainerAllocator {
       }
       cList.add(container);
       numAllocated++;
+      nextNodeToSchedule++;
       LOG.info("Allocated [" + container.getId() + "] as opportunistic on node "+node.getHttpAddress());
     }
     LOG.info("Allocated " + numAllocated + " opportunistic containers.");

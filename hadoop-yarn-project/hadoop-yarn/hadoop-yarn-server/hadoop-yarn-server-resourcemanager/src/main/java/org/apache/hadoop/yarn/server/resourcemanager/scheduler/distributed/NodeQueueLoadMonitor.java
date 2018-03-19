@@ -286,13 +286,13 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
               .setRunningLength(runningOppContainers)
               .setAllocatedMemory(allocatedMemory)
               .setAllcoatedCPU(allocatedCPU);
-          //if (LOG.isDebugEnabled()) {
+          if (LOG.isDebugEnabled()) {
             LOG.info("Updating ClusterNode [" + rmNode.getNodeID() + "] " +
                 "with queue wait time [" + estimatedQueueWaitTime + "] and " +
                 "wait queue length [" + waitQueueLength + "] and " +
                 "allocated memory [ "+allocatedMemory+" ] and " +
                 "container memory [ "+containerUtilization.getPhysicalMemory()+" ]");
-         //}
+         }
         } else {
           this.clusterNodes.remove(rmNode.getNodeID());
           LOG.info("Deleting ClusterNode [" + rmNode.getNodeID() + "] " +
