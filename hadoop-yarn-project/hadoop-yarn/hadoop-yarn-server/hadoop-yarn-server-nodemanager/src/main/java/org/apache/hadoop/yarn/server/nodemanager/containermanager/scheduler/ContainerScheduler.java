@@ -197,14 +197,27 @@ public class ContainerScheduler extends AbstractService implements
   }
 
   public OpportunisticContainersStatus getOpportunisticContainersStatus() {
+	//metrics.get  
     this.opportunisticContainersStatus.setQueuedOpportContainers(
         getNumQueuedOpportunisticContainers());
+    //queuing length
     this.opportunisticContainersStatus.setWaitQueueLength(
         getNumQueuedContainers());
+    //note, we change the semantics of this function, we did not return used opp container
+    //instead, we returned allcoated memory
+    // this.opportunisticContainersStatus.setOpportMemoryUsed(
+    //    metrics.getAllocatedOpportunisticGB());
+    
     this.opportunisticContainersStatus.setOpportMemoryUsed(
-        metrics.getAllocatedOpportunisticGB());
+    		utilizationTracker.getCurrentUtilization().getPhysicalMemory()); 
+    //note, we change the semantics of this function, we did not return used opp container
+    //instead, we returned allcoated cores
+    //this.opportunisticContainersStatus.setOpportCoresUsed(
+    //    metrics.getAllocatedOpportunisticVCores());
     this.opportunisticContainersStatus.setOpportCoresUsed(
-        metrics.getAllocatedOpportunisticVCores());
+    		(int)(utilizationTracker.getCurrentUtilization().getCPU() 
+    		* getContainersMonitor().getVCoresAllocatedForContainers()));
+    
     this.opportunisticContainersStatus.setRunningOpportContainers(
         metrics.getRunningOpportunisticContainers());
     return this.opportunisticContainersStatus;

@@ -60,10 +60,21 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
 
     @Override
     public int compare(ClusterNode o1, ClusterNode o2) {
-      if (getMetric(o1) == getMetric(o2)) {
-        return (int)(o2.containerUtilization.getPhysicalMemory() - o1.containerUtilization.getPhysicalMemory());
+      if (getMetric(o1) != getMetric(o2)) {
+    	return getMetric(o1) - getMetric(o2); 
       }
-      return getMetric(o1) - getMetric(o2);
+      
+      if(o1.allocatedMemory != o2.allocatedMemory){
+       return (int)(o1.allocatedMemory - o2.allocatedMemory);    
+      }
+      
+      if(o1.containerUtilization.getPhysicalMemory() != o2.containerUtilization.getPhysicalMemory())
+      {
+    	 return o1.containerUtilization.getPhysicalMemory() - o2.containerUtilization.getPhysicalMemory(); 
+      }
+      
+      return (int)(o1.timestamp - o2.timestamp);
+      
     }
 
     public int getMetric(ClusterNode c) {
@@ -75,6 +86,8 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
 	//used to determine the cluster node when containers are  not queued yet.
 	ResourceUtilization containerUtilization; 
 	int runningLength=0;
+	long allocatedMemory=0;
+	int allocatedCPU=0;
     int queueLength = 0;
     int queueWaitTime = -1;
     double timestamp;
@@ -88,6 +101,17 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
     public ClusterNode setContainerUtilization(ResourceUtilization containerUtilization){
        this.containerUtilization=containerUtilization;
        return this;
+    }
+    
+    
+    public ClusterNode setAllocatedMemory(long allcoatedMemory){
+      this.allocatedMemory = allcoatedMemory;
+      return this;
+    }
+    
+    public ClusterNode setAllcoatedCPU(int allocatedCPU){
+      this.allocatedCPU = allocatedCPU;
+      return this;
     }
     
     public ClusterNode setQueueLength(int qLength) {
@@ -223,6 +247,8 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
         opportunisticContainersStatus.getEstimatedQueueWaitTime();
     int waitQueueLength = opportunisticContainersStatus.getWaitQueueLength();
     ResourceUtilization containerUtilization=rmNode.getAggregatedContainersUtilization();
+    long allocatedMemory=opportunisticContainersStatus.getOpportMemoryUsed();
+    int allocatedCPU   =opportunisticContainersStatus.getOpportCoresUsed();
     // Add nodes to clusterNodes. If estimatedQueueTime is -1, ignore node
     // UNLESS comparator is based on queue length.
     ReentrantReadWriteLock.WriteLock writeLock = clusterNodesLock.writeLock();
@@ -237,7 +263,10 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
                   .setQueueWaitTime(estimatedQueueWaitTime)
                   .setQueueLength(waitQueueLength)
                   .setContainerUtilization(containerUtilization)
-                  .setRunningLength(runningOppContainers));
+                  .setRunningLength(runningOppContainers))
+                  .setAllocatedMemory(allocatedMemory)
+                  .setAllcoatedCPU(allocatedCPU);
+                  
           LOG.info("Inserting ClusterNode [" + rmNode.getNodeID() + "] " +
               "with queue wait time [" + estimatedQueueWaitTime + "] and " +
               "wait queue length [" + waitQueueLength + "]");
@@ -254,7 +283,9 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
               .setQueueLength(waitQueueLength)
               .setContainerUtilization(containerUtilization)
               .updateTimestamp()
-              .setRunningLength(runningOppContainers);
+              .setRunningLength(runningOppContainers)
+              .setAllocatedMemory(allocatedMemory)
+              .setAllcoatedCPU(allocatedCPU);
           if (LOG.isDebugEnabled()) {
             LOG.debug("Updating ClusterNode [" + rmNode.getNodeID() + "] " +
                 "with queue wait time [" + estimatedQueueWaitTime + "] and " +

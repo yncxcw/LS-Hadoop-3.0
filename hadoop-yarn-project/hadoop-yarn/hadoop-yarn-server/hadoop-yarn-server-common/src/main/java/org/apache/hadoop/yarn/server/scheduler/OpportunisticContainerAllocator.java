@@ -305,9 +305,10 @@ public class OpportunisticContainerAllocator {
       }
       cList.add(container);
       numAllocated++;
-      LOG.info("Allocated [" + container.getId() + "] as opportunistic.");
+      LOG.info("Allocated [" + container.getId() + "] as opportunistic on node "+node.getHttpAddress());
     }
     LOG.info("Allocated " + numAllocated + " opportunistic containers.");
+  
   }
 
   private Container buildContainer(long rmIdentifier,

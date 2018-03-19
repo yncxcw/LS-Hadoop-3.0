@@ -230,19 +230,12 @@ public class OpportunisticContainerAllocatorAMService
     SchedulerApplicationAttempt appAttempt =
         ((AbstractYarnScheduler)rmContext.getScheduler())
             .getApplicationAttempt(appAttemptId);
-    if(partitionedAsks.getOpportunistic().size() > 0){
-     // LOG.info("app "+appAttemptId+"opp request size: "+partitionedAsks.getOpportunistic().size());
-    }
-    
-    if(partitionedAsks.getGuaranteed().size() > 0){
-     // LOG.info("app "+appAttemptId+"gua request size: "+partitionedAsks.getGuaranteed().size());
-    }
+   
     OpportunisticContainerContext oppCtx =
         appAttempt.getOpportunisticContainerContext();
     oppCtx.updateNodeList(getLeastLoadedNodes());
+    
 
-    
-    
     List<Container> oppContainers =
         oppContainerAllocator.allocateContainers(
             request.getResourceBlacklistRequest(),
