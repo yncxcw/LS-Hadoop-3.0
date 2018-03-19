@@ -235,9 +235,9 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
           this.clusterNodes.put(rmNode.getNodeID(),
               new ClusterNode(rmNode.getNodeID())
                   .setQueueWaitTime(estimatedQueueWaitTime)
-                  .setQueueLength(waitQueueLength))
+                  .setQueueLength(waitQueueLength)
                   .setContainerUtilization(containerUtilization)
-                  .setRunningLength(runningOppContainers);
+                  .setRunningLength(runningOppContainers));
           LOG.info("Inserting ClusterNode [" + rmNode.getNodeID() + "] " +
               "with queue wait time [" + estimatedQueueWaitTime + "] and " +
               "wait queue length [" + waitQueueLength + "]");
