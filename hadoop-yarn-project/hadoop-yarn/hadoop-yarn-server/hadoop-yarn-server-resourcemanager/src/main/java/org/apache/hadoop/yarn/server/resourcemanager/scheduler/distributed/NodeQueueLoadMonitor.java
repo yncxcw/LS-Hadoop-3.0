@@ -286,13 +286,13 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
               .setRunningLength(runningOppContainers)
               .setAllocatedMemory(allocatedMemory)
               .setAllcoatedCPU(allocatedCPU);
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("Updating ClusterNode [" + rmNode.getNodeID() + "] " +
+          //if (LOG.isDebugEnabled()) {
+            LOG.info("Updating ClusterNode [" + rmNode.getNodeID() + "] " +
                 "with queue wait time [" + estimatedQueueWaitTime + "] and " +
                 "wait queue length [" + waitQueueLength + "] and " +
                 "allocated memory [ "+allocatedMemory+" ] and " +
                 "container memory [ "+containerUtilization.getPhysicalMemory()+" ]");
-          }
+         //}
         } else {
           this.clusterNodes.remove(rmNode.getNodeID());
           LOG.info("Deleting ClusterNode [" + rmNode.getNodeID() + "] " +
@@ -331,6 +331,7 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
       List<NodeId> retVal = ((k < this.sortedNodes.size()) && (k >= 0)) ?
           new ArrayList<>(this.sortedNodes).subList(0, k) :
           new ArrayList<>(this.sortedNodes);
+      LOG.info("selected least loaded nodes: "+retVal);    
       return retVal;
     } finally {
       readLock.unlock();

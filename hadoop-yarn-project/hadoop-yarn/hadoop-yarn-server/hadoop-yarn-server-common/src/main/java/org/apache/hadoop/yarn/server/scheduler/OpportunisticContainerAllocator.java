@@ -277,6 +277,7 @@ public class OpportunisticContainerAllocator {
             containers.get(anyAsk.getCapability()).size());
 
     List<RemoteNode> nodesForScheduling = new ArrayList<>();
+    LOG.info("opp blacklist "+blacklist);
     for (Entry<String, RemoteNode> nodeEntry : allNodes.entrySet()) {
       // Do not use blacklisted nodes for scheduling.
       if (blacklist.contains(nodeEntry.getKey())) {
