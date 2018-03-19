@@ -289,7 +289,9 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
           if (LOG.isDebugEnabled()) {
             LOG.debug("Updating ClusterNode [" + rmNode.getNodeID() + "] " +
                 "with queue wait time [" + estimatedQueueWaitTime + "] and " +
-                "wait queue length [" + waitQueueLength + "]");
+                "wait queue length [" + waitQueueLength + "] and " +
+                "allocated memory [ "+allocatedMemory+" ] and " +
+                "container memory [ "+containerUtilization.getPhysicalMemory()+" ]");
           }
         } else {
           this.clusterNodes.remove(rmNode.getNodeID());
