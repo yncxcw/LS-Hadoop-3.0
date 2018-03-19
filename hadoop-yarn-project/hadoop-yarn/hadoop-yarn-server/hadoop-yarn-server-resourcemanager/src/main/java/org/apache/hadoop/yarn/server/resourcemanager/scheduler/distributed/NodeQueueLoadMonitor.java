@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.ResourceOption;
+import org.apache.hadoop.yarn.api.records.ResourceUtilization;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NMContainerStatus;
 import org.apache.hadoop.yarn.server.api.records.OpportunisticContainersStatus;
 import org.apache.hadoop.yarn.server.resourcemanager.ClusterMonitor;
@@ -60,7 +61,7 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
     @Override
     public int compare(ClusterNode o1, ClusterNode o2) {
       if (getMetric(o1) == getMetric(o2)) {
-        return (int)(o2.timestamp - o1.timestamp);
+        return (int)(o2.containerUtilization.getPhysicalMemory() - o1.containerUtilization.getPhysicalMemory());
       }
       return getMetric(o1) - getMetric(o2);
     }
@@ -71,6 +72,9 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
   }
 
   static class ClusterNode {
+	//used to determine the cluster node when containers are  not queued yet.
+	ResourceUtilization containerUtilization; 
+	int runningLength=0;
     int queueLength = 0;
     int queueWaitTime = -1;
     double timestamp;
@@ -81,6 +85,11 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
       updateTimestamp();
     }
 
+    public ClusterNode setContainerUtilization(ResourceUtilization containerUtilization){
+       this.containerUtilization=containerUtilization;
+       return this;
+    }
+    
     public ClusterNode setQueueLength(int qLength) {
       this.queueLength = qLength;
       return this;
@@ -88,6 +97,11 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
 
     public ClusterNode setQueueWaitTime(int wTime) {
       this.queueWaitTime = wTime;
+      return this;
+    }
+    
+    public ClusterNode setRunningLength(int rLength){
+      this.runningLength=rLength;
       return this;
     }
 
@@ -201,12 +215,14 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
 
   @Override
   public void updateNode(RMNode rmNode) {
-    LOG.debug("Node update event from: " + rmNode.getNodeID());
+    //LOG.debug("Node update event from: " + rmNode.getNodeID());
     OpportunisticContainersStatus opportunisticContainersStatus =
         rmNode.getOpportunisticContainersStatus();
+    int runningOppContainers=opportunisticContainersStatus.getRunningOpportContainers();
     int estimatedQueueWaitTime =
         opportunisticContainersStatus.getEstimatedQueueWaitTime();
     int waitQueueLength = opportunisticContainersStatus.getWaitQueueLength();
+    ResourceUtilization containerUtilization=rmNode.getAggregatedContainersUtilization();
     // Add nodes to clusterNodes. If estimatedQueueTime is -1, ignore node
     // UNLESS comparator is based on queue length.
     ReentrantReadWriteLock.WriteLock writeLock = clusterNodesLock.writeLock();
@@ -219,7 +235,9 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
           this.clusterNodes.put(rmNode.getNodeID(),
               new ClusterNode(rmNode.getNodeID())
                   .setQueueWaitTime(estimatedQueueWaitTime)
-                  .setQueueLength(waitQueueLength));
+                  .setQueueLength(waitQueueLength))
+                  .setContainerUtilization(containerUtilization)
+                  .setRunningLength(runningOppContainers);
           LOG.info("Inserting ClusterNode [" + rmNode.getNodeID() + "] " +
               "with queue wait time [" + estimatedQueueWaitTime + "] and " +
               "wait queue length [" + waitQueueLength + "]");
@@ -234,7 +252,9 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
           currentNode
               .setQueueWaitTime(estimatedQueueWaitTime)
               .setQueueLength(waitQueueLength)
-              .updateTimestamp();
+              .setContainerUtilization(containerUtilization)
+              .updateTimestamp()
+              .setRunningLength(runningOppContainers);
           if (LOG.isDebugEnabled()) {
             LOG.debug("Updating ClusterNode [" + rmNode.getNodeID() + "] " +
                 "with queue wait time [" + estimatedQueueWaitTime + "] and " +

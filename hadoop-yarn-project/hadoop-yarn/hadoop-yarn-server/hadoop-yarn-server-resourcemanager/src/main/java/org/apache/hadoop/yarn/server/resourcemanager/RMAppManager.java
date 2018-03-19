@@ -460,6 +460,7 @@ public class RMAppManager implements EventHandler<RMAppManagerEvent>,
       }
 
       amReq.setCapability(scheduler.getNormalizedResource(amReq.getCapability()));
+      LOG.info("verifying execution type "+amReq.getExecutionTypeRequest());
       return amReq;
     }
     

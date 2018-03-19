@@ -39,11 +39,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class QueueLimitCalculator {
 
   class Stats {
-    private final AtomicInteger mean = new AtomicInteger(0);
+    private final AtomicInteger qmean = new AtomicInteger(0);
     private final AtomicInteger stdev = new AtomicInteger(0);
     private final AtomicInteger qsum   =new AtomicInteger(0);
     private final AtomicInteger qmax   = new AtomicInteger(0);
     private final AtomicInteger qmin   = new AtomicInteger(0);
+    
+    private final AtomicInteger  rmax   = new AtomicInteger(0);
+    private final AtomicInteger  rmin   = new AtomicInteger(0);
+    private final AtomicInteger  rmean   = new AtomicInteger(0);
 
     /**
      * Not thread safe. Caller should synchronize on sorted nodes list.
@@ -51,11 +55,19 @@ public class QueueLimitCalculator {
     void update() {
       List<NodeId> sortedNodes = nodeSelector.getSortedNodes();
       if (sortedNodes.size() > 0) {
-        // Calculate mean
+        //queuing stats
         int sum = 0;
         int max = 0;
         int min = 0;
+        
+        //running stats
+        int r_max=0;
+        int r_min=0;
+        int r_sum=0;
+        
         for (NodeId n : sortedNodes) {
+        	
+          //queuing metrics
           sum += getMetric(getNode(n));
           
           if(getMetric(getNode(n)) > max)
@@ -63,18 +75,30 @@ public class QueueLimitCalculator {
           
           if(getMetric(getNode(n)) < min)
         	  min=getMetric(getNode(n));
+          
+          r_sum += getNode(n).runningLength;
+          //running metrics
+          if(getNode(n).runningLength > r_max)
+        	  r_max=getNode(n).runningLength;
+          
+          if(getNode(n).runningLength < r_min)
+        	  r_min=getNode(n).runningLength;
         	  
         }
         qmax.set(max);
         qmin.set(min);
         qsum.set(sum);
-        mean.set(sum / sortedNodes.size());
+        qmean.set(sum / sortedNodes.size());
+        
+        rmax.set(r_max);
+        rmin.set(r_min);
+        rmean.set(r_sum/sortedNodes.size());
 
         // Calculate stdev
         int sqrSumMean = 0;
         for (NodeId n : sortedNodes) {
           int val = getMetric(getNode(n));
-          sqrSumMean += Math.pow(val - mean.get(), 2);
+          sqrSumMean += Math.pow(val - qmean.get(), 2);
         }
         stdev.set(
             (int) Math.round(Math.sqrt(
@@ -93,8 +117,20 @@ public class QueueLimitCalculator {
               .getMetric(cn) : 0;
     }
 
+    public int getRMean(){
+      return rmean.get();	
+    }
+    
+    public int getRMax(){
+      return rmax.get(); 	
+    }
+    
+    public int getRMin(){
+      return rmin.get();	
+    }
+    
     public int getMean() {
-      return mean.get();
+      return qmean.get();
     }
 
     public int getStdev() {
@@ -137,8 +173,9 @@ public class QueueLimitCalculator {
   }
 
   void update() {
-	LOG.info("queuing stats: "+stats.getSum()+"  "+stats.getMax()+"  "+stats.getMin()+"  "+stats.getMean());
-    this.stats.update();
+	LOG.info("queuing stats: "+stats.getSum() +"  "+stats.getMax() +"  "+stats.getMin()+"  "+stats.getMean());
+    LOG.info("running stats: "+stats.getRMax()+"  "+stats.getRMin()+"  "+stats.getRMean());
+	this.stats.update();
   }
 
   private int getThreshold() {
