@@ -168,18 +168,31 @@ public class NMSimulator extends TaskRunner.Task {
 	  int oppRunnings=0;
 	  int oppQueueopps=0;
 	  synchronized(oppContainerRunning){
+	   	  
+	   /*
+	    * We use node allocated memory and core to set opp memory and cores	  
 	   for(ContainerId cntId:oppContainerRunning){ 	
 	     oppCores+=runningContainers.get(cntId).getResource().getVirtualCores();
 	     oppMems+=runningContainers.get(cntId).getResource().getMemorySize();
 	     oppRunnings+=1;
 	   }
+	   */
+	  
+	    for(ContainerSimulator container:runningContainers.values()){
+	    	
+	      oppMems+=container.getResource().getMemorySize();
+	      oppCores+=container.getResource().getVirtualCores();
+	      // LOG.info("contaienr "+container.getId()+" memory: "+containerMemory);	 
+	    }
 	  }
 	  oppQueueopps=oppContainerQueuing.size();
 	  //TODO theoritical the oppQueues = queued guaranteed + queued opp, we do a simplicity here.
 	  oppQueues= oppQueueopps;
 	  //TODO how to estimate this value
 	  this.opportunisticContainersStatus.setEstimatedQueueWaitTime(0);
+	  //we use node used core instead
 	  this.opportunisticContainersStatus.setOpportCoresUsed(oppCores);
+	  //we use node used memory instead
 	  this.opportunisticContainersStatus.setOpportMemoryUsed(oppMems);
 	  this.opportunisticContainersStatus.setQueuedOpportContainers(oppQueueopps);
 	  this.opportunisticContainersStatus.setRunningOpportContainers(oppRunnings);
@@ -388,6 +401,8 @@ public class NMSimulator extends TaskRunner.Task {
     
     //Set node utilization, we only consider the memory utilization
     ns.setNodeUtilization(nodeUtilization);
+    ns.setContainersUtilization(nodeUtilization);
+    
     ns.setContainersStatuses(generateContainerStatusList());
     ns.setNodeId(node.getNodeID());
     ns.setKeepAliveApplications(new ArrayList<ApplicationId>());

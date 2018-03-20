@@ -399,6 +399,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
     }
 
     // update metrics
+    
     SortedMap<String, Counter> counterMap = metrics.getCounters();
     String names[] = new String[]{
             "counter.queue." + queueName + ".pending.memory",
@@ -741,7 +742,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
   // the following functions are used by AMSimulator
   public void addAMRuntime(String oldAppId,ApplicationId appId,
                            long traceStartTimeMS, long traceEndTimeMS,
-                           long simulateStartTimeMS, long simulateEndTimeMS, long simulateAMStartTimeMS) {
+                           long simulateStartTimeMS, long simulateEndTimeMS, long simulateAMStartTimeMS,int killedTask) {
 
     if (metricsON) {
       try {
@@ -750,7 +751,8 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
         sb.append(oldAppId).append(",").append(appId).append(",").append(traceStartTimeMS).append(",")
             .append(traceEndTimeMS).append(",").append(simulateStartTimeMS)
             .append(",").append(simulateEndTimeMS)
-            .append(",").append(simulateAMStartTimeMS);
+            .append(",").append(simulateAMStartTimeMS)
+            .append(",").append(killedTask);
         jobRuntimeLogBW.write(sb.toString() + EOL);
         jobRuntimeLogBW.flush();
       } catch (IOException e) {

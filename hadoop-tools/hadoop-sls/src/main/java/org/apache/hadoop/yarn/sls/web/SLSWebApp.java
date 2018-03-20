@@ -438,6 +438,7 @@ public class SLSWebApp extends HttpServlet {
    
     if(wrapper.getQueueSet()!=null){
     for (String queue : wrapper.getQueueSet()) {
+   	
       // memory
       String key = "counter.queue." + queue + ".allocated.memory";
       if (! queueAllocatedMemoryCounterMap.containsKey(queue) &&

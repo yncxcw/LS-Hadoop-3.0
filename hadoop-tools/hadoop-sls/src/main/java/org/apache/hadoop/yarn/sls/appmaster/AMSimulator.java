@@ -109,6 +109,8 @@ public abstract class AMSimulator extends TaskRunner.Task {
   // progress
   protected int totalContainers;
   protected int finishedContainers;
+  //statics
+  protected int killedTask=0;
   
   //To be compatible with new request id feature in hadoop-3.0.0
   protected static long REQUEST_ID=1;
@@ -201,7 +203,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
     ((SchedulerWrapper)rm.getResourceScheduler())
          .addAMRuntime(oldAppId,appId, 
                       traceStartTimeMS, traceFinishTimeMS, 
-                      simulateStartTimeMS, simulateFinishTimeMS,simulateAMStartTimeMS);
+                      simulateStartTimeMS, simulateFinishTimeMS,simulateAMStartTimeMS,killedTask);
   }
   
   protected ResourceRequest createResourceRequest(

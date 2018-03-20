@@ -275,6 +275,8 @@ public class MRAMSimulator extends AMSimulator {
                       "finish.", appId));
             }
           } else {
+        	//statisc for killed tasks  
+        	killedTask++;
             // container to be killed
             if (assignedMaps.containsKey(containerId)) {
               LOG.info(MessageFormat.format("Application {0} has one " +
