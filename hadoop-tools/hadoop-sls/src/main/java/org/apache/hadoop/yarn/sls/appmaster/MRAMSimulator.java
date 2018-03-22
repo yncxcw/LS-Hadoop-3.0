@@ -118,7 +118,7 @@ public class MRAMSimulator extends AMSimulator {
   // finished
   private boolean isFinished = false;
   // resource for AM container
-  private final static int MR_AM_CONTAINER_RESOURCE_MEMORY_MB = 1024;
+  private final static int MR_AM_CONTAINER_RESOURCE_MEMORY_MB = 32;
   private final static int MR_AM_CONTAINER_RESOURCE_VCORES = 1;
 
   public final Logger LOG = Logger.getLogger(MRAMSimulator.class);

@@ -474,6 +474,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       SchedulingMode schedulingMode, ResourceLimits currentResoureLimits) {
     Priority priority = schedulerKey.getPriority();
 
+    if(LOG.isDebugEnabled())
     {
       LOG.info("assignContainers: node=" + node.getNodeName()
           + " application=" + application.getApplicationId()
@@ -839,7 +840,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
         ContainerAllocation result =
             allocate(clusterResource, ps, schedulingMode, resourceLimits,
                 schedulerKey, null);
-        LOG.info("assignedContainers: "+schedulerKey.getAllocationRequestId()+"resources: "+result.getResourceToBeAllocated());
+        //LOG.info("assignedContainers: "+schedulerKey.getAllocationRequestId()+"resources: "+result.getResourceToBeAllocated());
 
         AllocationState allocationState = result.getAllocationState();
         if (allocationState == AllocationState.PRIORITY_SKIPPED) {

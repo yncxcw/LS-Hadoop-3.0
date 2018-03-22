@@ -773,7 +773,7 @@ public class LeafQueue extends AbstractCSQueue {
             queueUsage.getAMUsed(partitionName));
 
         if (LOG.isDebugEnabled()) {
-          LOG.debug("application " + application.getId() + " AMResource "
+          LOG.info("application " + application.getId() + " AMResource "
               + application.getAMResource(partitionName)
               + " maxAMResourcePerQueuePercent " + maxAMResourcePerQueuePercent
               + " amLimit " + amLimit + " lastClusterResource "
@@ -794,7 +794,7 @@ public class LeafQueue extends AbstractCSQueue {
             application.updateAMContainerDiagnostics(AMState.INACTIVATED,
                 CSAMContainerLaunchDiagnosticsConstants.QUEUE_AM_RESOURCE_LIMIT_EXCEED);
             if (LOG.isDebugEnabled()) {
-              LOG.debug("Not activating application " + applicationId
+              LOG.info("Not activating application " + applicationId
                   + " as  amIfStarted: " + amIfStarted + " exceeds amLimit: "
                   + amLimit);
             }
@@ -815,6 +815,7 @@ public class LeafQueue extends AbstractCSQueue {
         Resource userAmIfStarted = Resources.add(
             application.getAMResource(partitionName),
             user.getConsumedAMResources(partitionName));
+       
 
         if (!Resources.lessThanOrEqual(resourceCalculator, lastClusterResource,
             userAmIfStarted, userAMLimit)) {
@@ -829,7 +830,7 @@ public class LeafQueue extends AbstractCSQueue {
             application.updateAMContainerDiagnostics(AMState.INACTIVATED,
                 CSAMContainerLaunchDiagnosticsConstants.USER_AM_RESOURCE_LIMIT_EXCEED);
             if (LOG.isDebugEnabled()) {
-              LOG.debug("Not activating application " + applicationId
+              LOG.info("Not activating application " + applicationId
                   + " for user: " + user + " as userAmIfStarted: "
                   + userAmIfStarted + " exceeds userAmLimit: " + userAMLimit);
             }

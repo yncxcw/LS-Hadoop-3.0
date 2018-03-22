@@ -356,7 +356,7 @@ public abstract class AMSimulator extends TaskRunner.Task {
     
     for (ContainerSimulator cs : csList) {
     	
-      LOG.info("cs type: "+cs.getExeType()+" "+cs.getType()+" "+cs.getId());
+      //LOG.info("cs type: "+cs.getExeType()+" "+cs.getType()+" "+cs.getId());
       String rackHostNames[] = SLSUtils.getRackHostName(cs.getHostname());
       // check rack local
       String rackname = rackHostNames[0];

@@ -182,6 +182,7 @@ public class NMSimulator extends TaskRunner.Task {
 	    	
 	      oppMems+=container.getResource().getMemorySize();
 	      oppCores+=container.getResource().getVirtualCores();
+	      oppRunnings+=1;
 	      // LOG.info("contaienr "+container.getId()+" memory: "+containerMemory);	 
 	    }
 	  }
@@ -219,22 +220,28 @@ public class NMSimulator extends TaskRunner.Task {
   public void killOppRuningContainers(List<ContainerSimulator> toKills){
 	  for(ContainerSimulator container : toKills){
 		  ContainerId containerId=container.getId();
-		  ContainerSimulator cs = runningContainers.remove(containerId);
-		  containerQueue.remove(cs);
-		  oppContainerRunning.remove(cs.getId());
-		  synchronized(killedContainerList){
-		     killedContainerList.add(containerId);
+		  //before we move forward, we need to check if the container is till running
+		  //it may finish before killing
+		  if(runningContainers.containsKey(containerId)){
+		     ContainerSimulator cs = runningContainers.remove(containerId);
+		     containerQueue.remove(cs);
+			  
+			  synchronized(oppContainerRunning){
+			    oppContainerRunning.remove(containerId);
+			  }
+			  synchronized(killedContainerList){
+			     killedContainerList.add(containerId);
+			  }
+			  //updating node resources
+		      int physicalMemory=(int)cs.pullCurrentMemoryUsuage(System.currentTimeMillis());
+		      int virtualMemory =(int)cs.getResource().getMemorySize();
+		      nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
+		      nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory); 
+		      LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+
+					  " phy utilization "+nodeUtilization.getPhysicalMemory()+
+					  " vir utilization "+nodeUtilization.getVirtualMemory());
 		  }
-		 //updating node resources
-	      int physicalMemory=(int)cs.pullCurrentMemoryUsuage(System.currentTimeMillis());
-	      int virtualMemory =(int)cs.getResource().getMemorySize();
-	      nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
-	      nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory);
-	     
-	      LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+
-				  " phy utilization "+nodeUtilization.getPhysicalMemory()+
-				  " vir utilization "+nodeUtilization.getVirtualMemory());
-	      
+		     
 	  }
   }
 
@@ -263,12 +270,19 @@ public class NMSimulator extends TaskRunner.Task {
   public void finishContainer(){
 	// we check the lifetime for each running containers
 	    ContainerSimulator cs = null;
-	    synchronized(completedContainerList) {
+	    
 	      while ((cs = containerQueue.poll()) != null) {
-	        runningContainers.remove(cs.getId());
+	        if(runningContainers.containsKey(cs.getId())){
+	    	runningContainers.remove(cs.getId());
 	        //remove opp containers
-	        oppContainerRunning.remove(cs.getId());
-	        completedContainerList.add(cs.getId());
+	        
+	        synchronized(oppContainerRunning){
+	          oppContainerRunning.remove(cs.getId());
+	        }
+	        
+	        synchronized(completedContainerList) {
+	         completedContainerList.add(cs.getId());
+	        }
 	        //updating node resources
 	        int physicalMemory=(int)cs.pullCurrentMemoryUsuage(System.currentTimeMillis());
 	        int virtualMemory =(int)cs.getResource().getMemorySize();
@@ -285,11 +299,18 @@ public class NMSimulator extends TaskRunner.Task {
   //remove a running container due to preemption or failure, updating node resources
   public void removeContainer(ContainerSimulator container){
 	  ContainerId containerId=container.getId();
+	  //avoid race condition
+	  if(runningContainers.containsKey(containerId)){
 	  ContainerSimulator cs = runningContainers.remove(containerId);
       containerQueue.remove(cs);
-      oppContainerRunning.remove(cs.getId());
+      
+      synchronized(oppContainerRunning){
+        oppContainerRunning.remove(cs.getId());
+      }
       //it has been procted by outer lock
-      releasedContainerList.add(containerId);
+      synchronized(releasedContainerList) {
+         releasedContainerList.add(containerId);
+      }
       //updating node resources
       int physicalMemory=(int)cs.pullCurrentMemoryUsuage(System.currentTimeMillis());
       int virtualMemory =(int)cs.getResource().getMemorySize();
@@ -297,7 +318,7 @@ public class NMSimulator extends TaskRunner.Task {
       nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory);
       LOG.debug(MessageFormat.format("NodeManager {0} releases a " +
           "container ({1}).", node.getNodeID(), containerId));
-	  
+	 }
   }
   
   public void launchQueuedOppContainers(){
@@ -415,7 +436,6 @@ public class NMSimulator extends TaskRunner.Task {
         rm.getResourceTrackerService().nodeHeartbeat(beatRequest);
     if (! beatResponse.getContainersToCleanup().isEmpty()) {
       // remove from queue
-      synchronized(releasedContainerList) {
         for (ContainerId containerId : beatResponse.getContainersToCleanup()){
           if (amContainerList.contains(containerId)) {
             // AM container (not killed?, only release)
@@ -435,6 +455,9 @@ public class NMSimulator extends TaskRunner.Task {
         			 if(cs.getId().equals(containerId)){
         		    	 //remove from the queue.
         		    	 entryIt.remove();
+        		    	 synchronized(releasedContainerList) {
+        		    	    releasedContainerList.add(containerId);
+        		    	 }
         		         found=true;
         		         break;
         		      }
@@ -445,8 +468,8 @@ public class NMSimulator extends TaskRunner.Task {
         	   removeContainer(runningContainers.get(containerId));
           }
         }
-      }
-    }
+     }
+   
     if (beatResponse.getNodeAction() == NodeAction.SHUTDOWN) {
       lastStep();
     }

@@ -95,9 +95,11 @@ public abstract class AbstractContainerAllocator {
 
       if (result.getAllocationState() == AllocationState.RESERVED) {
         // This is a reserved container
+    	if(LOG.isDebugEnabled()){  
         LOG.info("Reserved container " + " application="
             + application.getApplicationId() + " resource=" + allocatedResource
             + " queue=" + this.toString() + " cluster=" + clusterResource);
+    	}
         assignment.getAssignmentInformation().addReservationDetails(
             updatedContainer, application.getCSLeafQueue().getQueuePath());
         assignment.getAssignmentInformation().incrReservations();
@@ -123,11 +125,12 @@ public abstract class AbstractContainerAllocator {
       } else if (result.getAllocationState() == AllocationState.ALLOCATED){
         // This is a new container
         // Inform the ordering policy
+    	if(LOG.isDebugEnabled()){  
         LOG.info("assignedContainer" + " application attempt=" + application
             .getApplicationAttemptId() + " container=" + updatedContainer
             .getContainerId() + " queue=" + this + " clusterResource="
             + clusterResource + " type=" + assignment.getType());
-
+    	}
         assignment.getAssignmentInformation().addAllocationDetails(
             updatedContainer, application.getCSLeafQueue().getQueuePath());
         assignment.getAssignmentInformation().incrAllocations();
