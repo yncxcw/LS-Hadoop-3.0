@@ -2024,6 +2024,12 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
       // If this is the AM container, it means the AM container is finished,
       // but we are not yet acknowledged that the final state has been saved.
       // Thus, we still return FINAL_SAVING state here.
+      if(appAttempt == null)
+    	  return;
+      
+      if(appAttempt.masterContainer == null)
+    	  return;
+      
       if (appAttempt.masterContainer.getId().equals(
         containerStatus.getContainerId())) {
 

@@ -117,6 +117,8 @@ public class MRAMSimulator extends AMSimulator {
   private Container amContainer;
   // finished
   private boolean isFinished = false;
+  //fail application if kill to much
+  private boolean killFailed = false;
   // resource for AM container
   private final static int MR_AM_CONTAINER_RESOURCE_MEMORY_MB = 32;
   private final static int MR_AM_CONTAINER_RESOURCE_VCORES = 1;
@@ -239,7 +241,7 @@ public class MRAMSimulator extends AMSimulator {
           // Start AM container
           amContainer = container;
           LOG.info(MessageFormat.format("Application {0} starts its " +
-              "AM container ({1}).", appId, amContainer.getId()));
+              "AM container ({1}) request size {2}.", appId, amContainer.getId(),containerSize));
           isAMContainerRunning = true;
           simulateAMStartTimeMS = System.currentTimeMillis() - 
                   SLSRunner.getRunner().getStartTimeMS();
@@ -277,15 +279,28 @@ public class MRAMSimulator extends AMSimulator {
           } else {
         	//statisc for killed tasks  
         	killedTask++;
+        	LOG.info(MessageFormat.format("Application {0} has one " +
+                    "task killed ({1}) total killed {2}.", appId, containerId,killedTask));
+        	
+        	//if all requeted containers are killed, we just failed the applications
+        	if(killedTask >= 2*containerSize
+        	   && isAMContainerRunning){
+        	  LOG.info(MessageFormat.format("Application {0} reach the limit of killing time",appId));
+        	  //kill all running containers
+        	  //List<ContainerId> toKilledMap=new ArrayList<>(assignedMaps.keySet());
+        	  
+              killFailed=true;	
+             //stop requesting new containers		
+        	}
             // container to be killed
             if (assignedMaps.containsKey(containerId)) {
-              LOG.info(MessageFormat.format("Application {0} has one " +
-                      "mapper killed ({1}).", appId, containerId));
-              pendingFailedMaps.add(assignedMaps.remove(containerId));
+              ContainerSimulator containerSim=assignedMaps.remove(containerId);
+              if(!killFailed)
+                 pendingFailedMaps.add(containerSim);
             } else if (assignedReduces.containsKey(containerId)) {
-              LOG.info(MessageFormat.format("Application {0} has one " +
-                      "reducer killed ({1}).", appId, containerId));
-              pendingFailedReduces.add(assignedReduces.remove(containerId));
+              ContainerSimulator containerSim=assignedMaps.remove(containerId);
+              if(!killFailed)
+                pendingFailedReduces.add(containerSim);
             } else {
               LOG.info(MessageFormat.format("Application {0}'s AM is " +
                       "going to be killed. Restarting...", appId));
@@ -295,6 +310,7 @@ public class MRAMSimulator extends AMSimulator {
         }
       }
       
+     
       // check finished
       if (isAMContainerRunning &&
               (mapFinished == mapTotal) &&
@@ -303,10 +319,26 @@ public class MRAMSimulator extends AMSimulator {
         se.getNmMap().get(amContainer.getNodeId())
                 .cleanupContainer(amContainer.getId());
         isAMContainerRunning = false;
-        LOG.info(MessageFormat.format("Application {0} sends out event " +
-                "to clean up its AM container.", appId));
+        LOG.info(MessageFormat.format("Application {0} finish event " +
+                "to clean up its AM container on application success", appId));
         isFinished = true;
+        finalStatus= "SUCCESS";
         break;
+      }
+      
+      //check if all assigned container finished
+      if(isAMContainerRunning&&killFailed 
+    		&& assignedMaps.isEmpty() 
+    		&& assignedReduces.isEmpty()
+        ){
+    	  se.getNmMap().get(amContainer.getNodeId())
+          .cleanupContainer(amContainer.getId());
+    	  LOG.info(MessageFormat.format("Application {0} fail event " +
+    	          "to clean up its AM container on application failure.", appId));
+          isAMContainerRunning = false;
+          isFinished = true;
+          finalStatus= "FAILURE";
+          break;  
       }
 
       //check for unsatisfied containers;
@@ -351,6 +383,8 @@ public class MRAMSimulator extends AMSimulator {
     // clear 
     finishedContainers = 0;
     isFinished = false;
+    killFailed =false;
+    killedTask = 0;
     mapFinished = 0;
     reduceFinished = 0;
     pendingFailedMaps.clear();
@@ -368,13 +402,17 @@ public class MRAMSimulator extends AMSimulator {
   @Override
   protected void sendContainerRequest()
           throws YarnException, IOException, InterruptedException {
+	  
+	   
     if (isFinished) {
       return;
     }
-
+    
     // send out request
     List<ResourceRequest> ask = null;
-    if (isAMContainerRunning) {
+    //if the application is still running, but we quit requesting more 
+    //containers because of too much kill
+    if (isAMContainerRunning && !killFailed) {
       if (mapFinished != mapTotal) {
         // map phase
         if (! pendingMaps.isEmpty()) {
@@ -383,7 +421,7 @@ public class MRAMSimulator extends AMSimulator {
                   "request for {1} mappers.", appId, pendingMaps.size()));
           scheduledMaps.addAll(pendingMaps);
           pendingMaps.clear();
-        } else if (! pendingFailedMaps.isEmpty() && scheduledMaps.isEmpty()) {
+        } else if ( !pendingFailedMaps.isEmpty() && scheduledMaps.isEmpty()) {
           ask = packageRequests(pendingFailedMaps, PRIORITY_MAP);
           LOG.info(MessageFormat.format("Application {0} sends out " +
                   "requests for {1} failed mappers.", appId,

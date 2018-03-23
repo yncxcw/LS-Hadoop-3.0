@@ -217,9 +217,8 @@ public class NMSimulator extends TaskRunner.Task {
   }
   
   
-  public void killOppRuningContainers(List<ContainerSimulator> toKills){
-	  for(ContainerSimulator container : toKills){
-		  ContainerId containerId=container.getId();
+  public void killRuningContainers(List<ContainerId> toKills){
+	  for(ContainerId containerId : toKills){
 		  //before we move forward, we need to check if the container is till running
 		  //it may finish before killing
 		  if(runningContainers.containsKey(containerId)){
@@ -237,7 +236,7 @@ public class NMSimulator extends TaskRunner.Task {
 		      int virtualMemory =(int)cs.getResource().getMemorySize();
 		      nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
 		      nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory); 
-		      LOG.info("killing container "+container.getId()+" on node "+node.getNodeID()+
+		      LOG.info("killing container "+containerId+" on node "+node.getNodeID()+
 					  " phy utilization "+nodeUtilization.getPhysicalMemory()+
 					  " vir utilization "+nodeUtilization.getVirtualMemory());
 		  }
@@ -348,7 +347,7 @@ public class NMSimulator extends TaskRunner.Task {
 	 LOG.info("try to kill to free "+demandMemory); 
 	 //start searching from the beginning of the opp running list
 	 int  index=oppContainerRunning.size()-1; 
-	 List<ContainerSimulator> toKills=new ArrayList<ContainerSimulator>();
+	 List<ContainerId> toKills=new ArrayList<ContainerId>();
  	 while(demandMemory > 0 && index >= 0){
  		 //always kill newly launched container
 		 ContainerId cntId=oppContainerRunning.get(index);
@@ -361,10 +360,10 @@ public class NMSimulator extends TaskRunner.Task {
 			 cntMemory = container.pullCurrentMemoryUsuage(System.currentTimeMillis());
 		 demandMemory-=cntMemory;
 		 index--;
-		 toKills.add(container);
+		 toKills.add(cntId);
 		 
 	 }
- 	killOppRuningContainers(toKills); 
+ 	killRuningContainers(toKills); 
 	return toKills.size();  
   }
   
@@ -432,6 +431,7 @@ public class NMSimulator extends TaskRunner.Task {
     ns.setOpportunisticContainersStatus(opportunisticContainersStatus);
     beatRequest.setNodeStatus(ns);
     
+    LOG.info("host "+node.getNodeID() +" heartbeat "+RESPONSE_ID);
     NodeHeartbeatResponse beatResponse =
         rm.getResourceTrackerService().nodeHeartbeat(beatRequest);
     if (! beatResponse.getContainersToCleanup().isEmpty()) {
@@ -470,6 +470,8 @@ public class NMSimulator extends TaskRunner.Task {
         }
      }
    
+    
+    
     if (beatResponse.getNodeAction() == NodeAction.SHUTDOWN) {
       lastStep();
     }
@@ -522,7 +524,7 @@ public class NMSimulator extends TaskRunner.Task {
     // killed containers
     synchronized(killedContainerList) {
       for (ContainerId cId : killedContainerList) {
-        LOG.info(MessageFormat.format("NodeManager {0} killed container" +
+        LOG.debug(MessageFormat.format("NodeManager {0} killed container" +
                 " ({1}).", node.getNodeID(), cId));
         csList.add(newContainerStatus(
                 cId, ContainerState.COMPLETE, ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER));

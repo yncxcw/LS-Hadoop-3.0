@@ -742,7 +742,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
   // the following functions are used by AMSimulator
   public void addAMRuntime(String oldAppId,ApplicationId appId,
                            long traceStartTimeMS, long traceEndTimeMS,
-                           long simulateStartTimeMS, long simulateEndTimeMS, long simulateAMStartTimeMS,int killedTask) {
+                           long simulateStartTimeMS, long simulateEndTimeMS, long simulateAMStartTimeMS,int killedTask, String finalStatus) {
 
     if (metricsON) {
       try {
@@ -752,7 +752,8 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
             .append(traceEndTimeMS).append(",").append(simulateStartTimeMS)
             .append(",").append(simulateEndTimeMS)
             .append(",").append(simulateAMStartTimeMS)
-            .append(",").append(killedTask);
+            .append(",").append(killedTask)
+            .append(finalStatus);
         jobRuntimeLogBW.write(sb.toString() + EOL);
         jobRuntimeLogBW.flush();
       } catch (IOException e) {

@@ -111,6 +111,10 @@ public abstract class AMSimulator extends TaskRunner.Task {
   protected int finishedContainers;
   //statics
   protected int killedTask=0;
+  //statics
+  protected int containerSize=0;
+  
+  protected String finalStatus="UNKNOW";
   
   //To be compatible with new request id feature in hadoop-3.0.0
   protected static long REQUEST_ID=1;
@@ -135,10 +139,10 @@ public abstract class AMSimulator extends TaskRunner.Task {
     this.oldAppId = oldAppId;
     this.isTracked = isTracked;
     this.traceStartTimeMS = traceStartTime;
-    
     this.traceFinishTimeMS = traceFinishTime;
+    this.containerSize=containerList.size();
     
-    LOG.info("traceStart: "+this.traceStartTimeMS+" traceFinish: "+this.traceFinishTimeMS);
+   
   }
 
   /**
@@ -200,10 +204,10 @@ public abstract class AMSimulator extends TaskRunner.Task {
     simulateFinishTimeMS = System.currentTimeMillis() -
         SLSRunner.getRunner().getStartTimeMS();
     // record job running information
-    ((SchedulerWrapper)rm.getResourceScheduler())
+    ((SchedulerWrapper)rm.getResourceScheduler()) 
          .addAMRuntime(oldAppId,appId, 
                       traceStartTimeMS, traceFinishTimeMS, 
-                      simulateStartTimeMS, simulateFinishTimeMS,simulateAMStartTimeMS,killedTask);
+                      simulateStartTimeMS, simulateFinishTimeMS,simulateAMStartTimeMS,killedTask,finalStatus);
   }
   
   protected ResourceRequest createResourceRequest(
@@ -429,10 +433,6 @@ public abstract class AMSimulator extends TaskRunner.Task {
       ask.addAll(pair.getValue().values());	 	
     }
     ask.addAll(anyLocalRequests.values());
-    
-    for(ResourceRequest askt: ask){
-        LOG.info("type : "+askt.getExecutionTypeRequest());	
-     }
     
     return ask;
   }
