@@ -1,0 +1,5 @@
+FROM ubuntu
+
+MAINTAINER Wei Chen
+ADD memory /bin
+CMD ["/bin/memory"]
