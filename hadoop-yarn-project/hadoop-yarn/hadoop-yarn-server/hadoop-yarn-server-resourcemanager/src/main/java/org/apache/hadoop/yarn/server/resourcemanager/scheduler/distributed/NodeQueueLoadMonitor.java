@@ -64,9 +64,11 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
     	return getMetric(o1) - getMetric(o2); 
       }
       
+      /* for physical implementation or virtual implementation
       if(o1.allocatedMemory != o2.allocatedMemory){
        return (int)(o1.allocatedMemory - o2.allocatedMemory);    
       }
+      */
       
       if(o1.containerUtilization.getPhysicalMemory() != o2.containerUtilization.getPhysicalMemory())
       {
