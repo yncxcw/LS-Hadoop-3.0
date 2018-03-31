@@ -199,13 +199,14 @@ public class NodeResourceMonitorImpl extends AbstractService implements
             ResourceUtilization.newInstance(
                 (int) (pmem >> 20), // B -> MB
                 (int) (vmem >> 20), // B -> MB
-                vcores); // Used Virtual Cores
+                vcores);            // Used Virtual Cores
         		
         LOG.info("nodemonitor nodeavail: "+nodeAvailableMemory+
         		              " usedswap: "+usedSwap+
         		              " inacanon: "+inactiveAnon+
         		              " inacfile: "+inactiveFile+
-        		              " cachemem: "+cachedMem
+        		              " cachemem: "+cachedMem+
+        		              " vcores: "  +vcores
         		);
         try {
           Thread.sleep(monitoringInterval);

@@ -73,9 +73,9 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
       }
       
       if(enablePmemLaunch){
-    	//only compare virtual memory
-          if(o1.allocatedMemory != o2.allocatedMemory){
-            return (int)(o1.allocatedMemory - o2.allocatedMemory);    
+    	  //only compare CPU utilization
+          if(o1.containerUtilization.getCPU() != o2.containerUtilization.getCPU()){
+            return (int)(o1.containerUtilization.getCPU() - o2.containerUtilization.getCPU());    
            }
            
            if(o1.containerUtilization.getPhysicalMemory() != o2.containerUtilization.getPhysicalMemory())
@@ -308,13 +308,16 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
               .setRunningLength(runningOppContainers)
               .setAllocatedMemory(allocatedMemory)
               .setAllcoatedCPU(allocatedCPU);
-          if (LOG.isDebugEnabled()) {
+         
+          //demonstrate the cpu usage
+          // if (LOG.isDebugEnabled()) {
             LOG.info("Updating ClusterNode [" + rmNode.getNodeID() + "] " +
                 "with queue wait time [" + estimatedQueueWaitTime + "] and " +
                 "wait queue length [" + waitQueueLength + "] and " +
                 "allocated memory [ "+allocatedMemory+" ] and " +
-                "container memory [ "+containerUtilization.getPhysicalMemory()+" ]");
-         }
+                "container memory [ "+containerUtilization.getPhysicalMemory()+
+                "container CPU ["+containerUtilization.getCPU()+" ]");
+        // }
         } else {
           this.clusterNodes.remove(rmNode.getNodeID());
           LOG.info("Deleting ClusterNode [" + rmNode.getNodeID() + "] " +
