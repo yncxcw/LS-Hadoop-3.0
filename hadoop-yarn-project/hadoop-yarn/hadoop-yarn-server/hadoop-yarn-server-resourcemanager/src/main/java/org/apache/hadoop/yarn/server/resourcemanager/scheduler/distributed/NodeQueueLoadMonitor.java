@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.ResourceOption;
 import org.apache.hadoop.yarn.api.records.ResourceUtilization;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NMContainerStatus;
 import org.apache.hadoop.yarn.server.api.records.OpportunisticContainersStatus;
 import org.apache.hadoop.yarn.server.resourcemanager.ClusterMonitor;
@@ -57,26 +58,45 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
   public enum LoadComparator implements Comparator<ClusterNode> {
     QUEUE_LENGTH,
     QUEUE_WAIT_TIME;
-
+	
+	private boolean enablePmemLaunch = false; 
+	
+	public void setPmemLaunch(boolean pmemLaunch){
+		
+	  this.enablePmemLaunch = pmemLaunch;	
+	}
     @Override
     public int compare(ClusterNode o1, ClusterNode o2) {
+      //if the system is heavy queued	
       if (getMetric(o1) != getMetric(o2)) {
     	return getMetric(o1) - getMetric(o2); 
       }
       
-      /* for physical implementation or virtual implementation
-      if(o1.allocatedMemory != o2.allocatedMemory){
-       return (int)(o1.allocatedMemory - o2.allocatedMemory);    
+      if(enablePmemLaunch){
+    	//only compare virtual memory
+          if(o1.allocatedMemory != o2.allocatedMemory){
+            return (int)(o1.allocatedMemory - o2.allocatedMemory);    
+           }
+           
+           if(o1.containerUtilization.getPhysicalMemory() != o2.containerUtilization.getPhysicalMemory())
+           {
+         	 return o1.containerUtilization.getPhysicalMemory() - o2.containerUtilization.getPhysicalMemory(); 
+           }
+           
+           return (int)(o1.timestamp - o2.timestamp);	    	
+      }else{
+         //only compare virtual memory
+         if(o1.allocatedMemory != o2.allocatedMemory){
+           return (int)(o1.allocatedMemory - o2.allocatedMemory);    
+          }
+          
+          if(o1.containerUtilization.getPhysicalMemory() != o2.containerUtilization.getPhysicalMemory())
+          {
+        	 return o1.containerUtilization.getPhysicalMemory() - o2.containerUtilization.getPhysicalMemory(); 
+          }
+          
+          return (int)(o1.timestamp - o2.timestamp);	   
       }
-      */
-      
-      if(o1.containerUtilization.getPhysicalMemory() != o2.containerUtilization.getPhysicalMemory())
-      {
-    	 return o1.containerUtilization.getPhysicalMemory() - o2.containerUtilization.getPhysicalMemory(); 
-      }
-      
-      return (int)(o1.timestamp - o2.timestamp);
-      
     }
 
     public int getMetric(ClusterNode c) {
@@ -147,7 +167,7 @@ public class NodeQueueLoadMonitor implements ClusterMonitor {
   private ReentrantReadWriteLock sortedNodesLock = new ReentrantReadWriteLock();
   private ReentrantReadWriteLock clusterNodesLock =
       new ReentrantReadWriteLock();
-
+  
   Runnable computeTask = new Runnable() {
     @Override
     public void run() {

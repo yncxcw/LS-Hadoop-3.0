@@ -118,6 +118,7 @@ public class OpportunisticContainerAllocatorAMService
             DEFAULT_NM_CONTAINER_QUEUING_SORTING_NODES_INTERVAL_MS);
     this.cacheRefreshInterval = nodeSortInterval;
     this.lastCacheUpdateTime = System.currentTimeMillis();
+    
     NodeQueueLoadMonitor.LoadComparator comparator =
         NodeQueueLoadMonitor.LoadComparator.valueOf(
             rmContext.getYarnConfiguration().get(
@@ -125,6 +126,12 @@ public class OpportunisticContainerAllocatorAMService
                 YarnConfiguration.
                     DEFAULT_NM_CONTAINER_QUEUING_LOAD_COMPARATOR));
 
+    boolean enablePmemLaunch =
+    		rmContext.getYarnConfiguration().getBoolean(YarnConfiguration.NM_ENABLE_PMEM_LAUNCH, 
+        		YarnConfiguration.DEFAULT_NM_ENABLE_PMEM_LAUNCH);
+    
+    comparator.setPmemLaunch(enablePmemLaunch);
+    
     NodeQueueLoadMonitor topKSelector =
         new NodeQueueLoadMonitor(nodeSortInterval, comparator);
 
