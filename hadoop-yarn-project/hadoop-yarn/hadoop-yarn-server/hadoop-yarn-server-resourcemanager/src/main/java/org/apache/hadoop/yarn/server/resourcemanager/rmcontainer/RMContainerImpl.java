@@ -45,6 +45,7 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.server.api.protocolrecords.NMContainerStatus;
 import org.apache.hadoop.yarn.server.resourcemanager.RMContext;
 import org.apache.hadoop.yarn.server.resourcemanager.nodelabels.RMNodeLabelsManager;
+import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMApp;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppRunningOnNodeEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttempt;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttemptEvent;
@@ -740,9 +741,14 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
 
     private static void updateAttemptMetrics(RMContainerImpl container) {
       Resource resource = container.getContainer().getResource();
-      RMAppAttempt rmAttempt = container.rmContext.getRMApps()
-          .get(container.getApplicationAttemptId().getApplicationId())
-          .getCurrentAppAttempt();
+      
+      RMApp rmApp=container.rmContext.getRMApps()
+              .get(container.getApplicationAttemptId().getApplicationId());
+      
+      if(rmApp == null)
+    	  return;
+      
+      RMAppAttempt rmAttempt =rmApp.getCurrentAppAttempt();
 
       if (rmAttempt != null) {
         long usedMillis = container.finishTime - container.creationTime;

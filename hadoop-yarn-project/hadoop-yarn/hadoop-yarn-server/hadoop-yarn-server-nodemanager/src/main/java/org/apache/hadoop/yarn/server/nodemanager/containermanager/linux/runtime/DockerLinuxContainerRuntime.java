@@ -57,6 +57,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -460,13 +461,25 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
     int cntId=ctx.getContainer().getContainerId().getId(); 
     if(ctx.getContainer().getContainerTokenIdentifier().getExecutionType() 
         		== ExecutionType.OPPORTUNISTIC){
-          int appId=ctx.getContainer().getContainerId().getApplicationAttemptId().getApplicationId().getId();	
+          
+    	  /*
+    	  int appId=ctx.getContainer().getContainerId().getApplicationAttemptId().getApplicationId().getId();	
           if(cntId==1){
            	runCommand.oomScore(899);  
           }else{
             runCommand.oomScore(900+appId%100);
           }
-            runCommand.swappiness(0);
+          */
+    	
+    	  //for test purpose only
+          Random rand = new Random();
+          
+          int oomScore=rand.nextInt(90)+1;
+          runCommand.oomScore(900+oomScore);
+          //
+          
+          
+          runCommand.swappiness(0);
      
     }else{
           runCommand.oomScore(-1000);

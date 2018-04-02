@@ -44,6 +44,8 @@ import org.apache.hadoop.yarn.api.records.ResourceRequest;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
+import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMApp;
+import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttempt;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
 
 import org.apache.hadoop.yarn.sls.scheduler.ContainerSimulator;
@@ -413,7 +415,7 @@ public class MRAMSimulator extends AMSimulator {
     //if the application is still running, but we quit requesting more 
     //containers because of too much kill
     if (isAMContainerRunning && !killFailed) {
-      if (mapFinished != mapTotal) {
+      if (mapFinished != mapTotal && mapTotal > 0) {
         // map phase
         if (! pendingMaps.isEmpty()) {
           ask = packageRequests(pendingMaps, PRIORITY_MAP);
@@ -429,7 +431,7 @@ public class MRAMSimulator extends AMSimulator {
           scheduledMaps.addAll(pendingFailedMaps);
           pendingFailedMaps.clear();
         }
-      } else if (reduceFinished != reduceTotal) {
+      } else if (reduceFinished != reduceTotal && reduceTotal > 0) {
         // reduce phase
         if (! pendingReduces.isEmpty()) {
           ask = packageRequests(pendingReduces, PRIORITY_REDUCE);
@@ -461,9 +463,21 @@ public class MRAMSimulator extends AMSimulator {
 
     UserGroupInformation ugi =
             UserGroupInformation.createRemoteUser(appAttemptId.toString());
-    Token<AMRMTokenIdentifier> token = rm.getRMContext().getRMApps()
-            .get(appAttemptId.getApplicationId())
-            .getRMAppAttempt(appAttemptId).getAMRMToken();
+    
+    RMApp rmApp=rm.getRMContext().getRMApps()
+            .get(appAttemptId.getApplicationId());
+    
+    if(rmApp == null)
+    	return;
+    
+    RMAppAttempt rmAppAttempt=rmApp.getRMAppAttempt(appAttemptId);
+    
+    if(rmAppAttempt == null)
+    	return;
+    
+    
+    Token<AMRMTokenIdentifier> token = rmAppAttempt.getAMRMToken();
+    
     ugi.addTokenIdentifier(token.decodeIdentifier());
     AllocateResponse response = ugi.doAs(
             new PrivilegedExceptionAction<AllocateResponse>() {

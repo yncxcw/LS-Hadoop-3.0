@@ -287,7 +287,7 @@ public class NMSimulator extends TaskRunner.Task {
 	        int virtualMemory =(int)cs.getResource().getMemorySize();
 	        nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
 	        nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory);
-	        LOG.debug(MessageFormat.format("Container {0} has completed",
+	        LOG.info(MessageFormat.format("Container {0} has completed",
 	                cs.getId()));
 	      }
 	    }
@@ -315,7 +315,7 @@ public class NMSimulator extends TaskRunner.Task {
       int virtualMemory =(int)cs.getResource().getMemorySize();
       nodeUtilization.setPhysicalMemory((int)nodeUtilization.getPhysicalMemory()-physicalMemory);
       nodeUtilization.setVirtualMemory((int)nodeUtilization.getVirtualMemory()-virtualMemory);
-      LOG.debug(MessageFormat.format("NodeManager {0} releases a " +
+      LOG.info(MessageFormat.format("NodeManager {0} is releasing a " +
           "container ({1}).", node.getNodeID(), containerId));
 	 }
   }
@@ -431,7 +431,7 @@ public class NMSimulator extends TaskRunner.Task {
     ns.setOpportunisticContainersStatus(opportunisticContainersStatus);
     beatRequest.setNodeStatus(ns);
     
-    LOG.info("host "+node.getNodeID() +" heartbeat "+RESPONSE_ID);
+    //LOG.info("host "+node.getNodeID() +" heartbeat "+RESPONSE_ID);
     NodeHeartbeatResponse beatResponse =
         rm.getResourceTrackerService().nodeHeartbeat(beatRequest);
     if (! beatResponse.getContainersToCleanup().isEmpty()) {
@@ -502,7 +502,7 @@ public class NMSimulator extends TaskRunner.Task {
     // add complete containers
     synchronized(completedContainerList) {
       for (ContainerId cId : completedContainerList) {
-        LOG.debug(MessageFormat.format("NodeManager {0} completed" +
+        LOG.info(MessageFormat.format("NodeManager {0} completed" +
                 " container ({1}).", node.getNodeID(), cId));
         csList.add(newContainerStatus(
                 cId, ContainerState.COMPLETE, ContainerExitStatus.SUCCESS));
@@ -513,7 +513,7 @@ public class NMSimulator extends TaskRunner.Task {
     // released containers
     synchronized(releasedContainerList) {
       for (ContainerId cId : releasedContainerList) {
-        LOG.debug(MessageFormat.format("NodeManager {0} released container" +
+        LOG.info(MessageFormat.format("NodeManager {0} released container" +
                 " ({1}).", node.getNodeID(), cId));
         csList.add(newContainerStatus(
                 cId, ContainerState.COMPLETE, ContainerExitStatus.ABORTED));
@@ -524,7 +524,7 @@ public class NMSimulator extends TaskRunner.Task {
     // killed containers
     synchronized(killedContainerList) {
       for (ContainerId cId : killedContainerList) {
-        LOG.debug(MessageFormat.format("NodeManager {0} killed container" +
+        LOG.info(MessageFormat.format("NodeManager {0} killed container" +
                 " ({1}).", node.getNodeID(), cId));
         csList.add(newContainerStatus(
                 cId, ContainerState.COMPLETE, ContainerExitStatus.KILLED_BY_CONTAINER_SCHEDULER));

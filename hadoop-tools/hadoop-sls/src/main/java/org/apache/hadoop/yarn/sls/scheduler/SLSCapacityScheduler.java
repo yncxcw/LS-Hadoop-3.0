@@ -753,7 +753,8 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
             .append(",").append(simulateEndTimeMS)
             .append(",").append(simulateAMStartTimeMS)
             .append(",").append(killedTask)
-            .append(finalStatus);
+            .append(",").append(finalStatus);
+        LOG.info("jobruntime : "+sb.toString());
         jobRuntimeLogBW.write(sb.toString() + EOL);
         jobRuntimeLogBW.flush();
       } catch (IOException e) {
