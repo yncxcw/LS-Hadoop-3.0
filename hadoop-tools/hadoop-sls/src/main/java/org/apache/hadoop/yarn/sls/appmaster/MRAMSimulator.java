@@ -122,8 +122,8 @@ public class MRAMSimulator extends AMSimulator {
   //fail application if kill to much
   private boolean killFailed = false;
   // resource for AM container
-  private final static int MR_AM_CONTAINER_RESOURCE_MEMORY_MB = 32;
-  private final static int MR_AM_CONTAINER_RESOURCE_VCORES = 1;
+  private final static int MR_AM_CONTAINER_RESOURCE_MEMORY_MB = 1;
+  private final static int MR_AM_CONTAINER_RESOURCE_VCORES =    1;
 
   public final Logger LOG = Logger.getLogger(MRAMSimulator.class);
 
@@ -495,7 +495,8 @@ public class MRAMSimulator extends AMSimulator {
   @Override
   protected void checkStop() {
     if (isFinished) {
-      super.setEndTime(System.currentTimeMillis());
+      LOG.info(appId+"is going to stop in 1000ms");	
+      super.setEndTime(System.currentTimeMillis()+1000);
     }
   }
 

@@ -421,7 +421,7 @@ public class SLSRunner {
           String amType = jsonJob.get("am.type").toString();
           AMSimulator amSim = (AMSimulator) ReflectionUtils.newInstance(
                   amClassMap.get(amType), new Configuration());
-          LOG.info("newly creaed job: "+jobname+"conainer size: "+containerList.size()+"queue: "+queue);
+          //LOG.info("newly creaed job: "+jobname+"conainer size: "+containerList.size()+"queue: "+queue);
           if (amSim != null) {
             amSim.init(AM_ID++, heartbeatInterval, containerList, rm,
                     this, jobStartTime, jobFinishTime, user, queue,
