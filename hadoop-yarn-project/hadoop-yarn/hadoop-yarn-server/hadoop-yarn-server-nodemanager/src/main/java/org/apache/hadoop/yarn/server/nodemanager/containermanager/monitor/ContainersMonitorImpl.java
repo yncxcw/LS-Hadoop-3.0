@@ -454,6 +454,12 @@ public class ContainersMonitorImpl extends AbstractService implements
         // Save the aggregated utilization of the containers
         setContainersUtilization(trackedContainersUtilization);
         //LOG.info("monitor loopend");
+        
+        //delete the thread objects
+        for(Thread t:monitorThreads){
+        	t=null;
+        }
+        
         try {
           Thread.sleep(monitoringInterval);
         } catch (InterruptedException e) {

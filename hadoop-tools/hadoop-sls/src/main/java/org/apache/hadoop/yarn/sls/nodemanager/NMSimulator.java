@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -348,6 +349,7 @@ public class NMSimulator extends TaskRunner.Task {
 	 //start searching from the beginning of the opp running list
 	 int  index=oppContainerRunning.size()-1; 
 	 List<ContainerId> toKills=new ArrayList<ContainerId>();
+	 
  	 while(demandMemory > 0 && index >= 0){
  		 //always kill newly launched container
 		 ContainerId cntId=oppContainerRunning.get(index);
@@ -363,8 +365,33 @@ public class NMSimulator extends TaskRunner.Task {
 		 toKills.add(cntId);
 		 
 	 }
- 	killRuningContainers(toKills); 
-	return toKills.size();  
+	 
+	
+	 /*
+	 //TO test the worst case killing
+	 Random rand=new Random();	 
+	 List<Integer> tempOppIndex=new ArrayList<Integer>();
+	 for(int i=0;i<=index;i++){
+		 tempOppIndex.add(i);
+	 }
+	 while(demandMemory > 0 && tempOppIndex.size() > 0){
+	    int next=rand.nextInt(tempOppIndex.size());
+	    ContainerId cntId=oppContainerRunning.get(next);
+		ContainerSimulator container=runningContainers.get(cntId);
+		 //oppContainerRunning.
+		 long cntMemory;
+		 if(byVirtual)
+			 cntMemory = container.getResource().getMemorySize();
+		 else
+			 cntMemory = container.pullCurrentMemoryUsuage(System.currentTimeMillis());
+		 demandMemory-=cntMemory;
+		 tempOppIndex.remove(next);
+		 toKills.add(cntId);
+	 }
+	 //TO test the random killing
+	 */
+ 	 killRuningContainers(toKills); 
+	 return toKills.size();  
   }
   
 

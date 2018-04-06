@@ -187,20 +187,29 @@ public abstract class AMSimulator extends TaskRunner.Task {
                   .newRecordInstance(FinishApplicationMasterRequest.class);
     finishAMRequest.setFinalApplicationStatus(FinalApplicationStatus.SUCCEEDED);
 
-    UserGroupInformation ugi =
-        UserGroupInformation.createRemoteUser(appAttemptId.toString());
-    Token<AMRMTokenIdentifier> token = rm.getRMContext().getRMApps().get(appId)
-        .getRMAppAttempt(appAttemptId).getAMRMToken();
-    ugi.addTokenIdentifier(token.decodeIdentifier());
-    ugi.doAs(new PrivilegedExceptionAction<Object>() {
-      @Override
-      public Object run() throws Exception {
-        rm.getApplicationMasterService()
-            .finishApplicationMaster(finishAMRequest);
-        return null;
-      }
-    });
-
+    
+    
+    RMApp rmApp=rm.getRMContext().getRMApps()
+            .get(appAttemptId.getApplicationId());
+    
+    if(rmApp != null){
+      RMAppAttempt rmAppAttempt=rmApp.getRMAppAttempt(appAttemptId);
+      if(rmAppAttempt != null){
+    	  UserGroupInformation ugi =
+    		        UserGroupInformation.createRemoteUser(appAttemptId.toString());
+    		    Token<AMRMTokenIdentifier> token = rmAppAttempt.getAMRMToken();
+    	  ugi.addTokenIdentifier(token.decodeIdentifier());
+          ugi.doAs(new PrivilegedExceptionAction<Object>() {
+    		      @Override
+    		      public Object run() throws Exception {
+    		        rm.getApplicationMasterService()
+    		            .finishApplicationMaster(finishAMRequest);
+    		        return null;
+    		     }
+    	  });    	  
+      }	
+    }
+    
     simulateFinishTimeMS = System.currentTimeMillis() -
         SLSRunner.getRunner().getStartTimeMS();
     // record job running information
