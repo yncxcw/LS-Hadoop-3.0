@@ -457,6 +457,7 @@ public class ContainersMonitorImpl extends AbstractService implements
         
         //delete the thread objects
         for(Thread t:monitorThreads){
+        	t.interrupt();
         	t=null;
         }
         

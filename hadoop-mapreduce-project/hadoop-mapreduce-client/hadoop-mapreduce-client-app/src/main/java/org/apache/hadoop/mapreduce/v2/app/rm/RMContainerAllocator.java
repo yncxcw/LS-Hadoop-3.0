@@ -1108,7 +1108,8 @@ public class RMContainerAllocator extends RMContainerRequestor
         LOG.info("Added "+event.getAttemptID()+" to list of failed maps");
         // If its an earlier Failed attempt, do not retry as OPPORTUNISTIC
         maps.put(event.getAttemptID(), request);
-        addContainerReq(request);
+        //addContainerReq(request);
+        addOpportunisticResourceRequest(request.priority, request.capability);
       } else {
         if (mapsMod100 < numOpportunisticMapsPercent) {
           request =
@@ -1142,7 +1143,8 @@ public class RMContainerAllocator extends RMContainerRequestor
             }
           }
           maps.put(event.getAttemptID(), request);
-          addContainerReq(request);
+          //addContainerReq(request);
+          addOpportunisticResourceRequest(request.priority, request.capability);
         }
         mapsMod100++;
         mapsMod100 %= 100;
