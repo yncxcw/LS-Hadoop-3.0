@@ -1152,7 +1152,9 @@ public class RMContainerAllocator extends RMContainerRequestor
     
     void addReduce(ContainerRequest req) {
       reduces.put(req.attemptID, req);
-      addContainerReq(req);
+      //addContainerReq(req);
+      //for test purpose, we let all reducers use opp containers
+      addOpportunisticResourceRequest(req.priority, req.capability);
     }
     
     // this method will change the list of allocatedContainers.

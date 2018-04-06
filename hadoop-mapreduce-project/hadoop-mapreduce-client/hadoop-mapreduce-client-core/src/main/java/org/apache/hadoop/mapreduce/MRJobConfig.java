@@ -1007,7 +1007,7 @@ public interface MRJobConfig {
    */
   public static final String MR_NUM_OPPORTUNISTIC_MAPS_PERCENT =
       "mapreduce.job.num-opportunistic-maps-percent";
-  public static final int DEFAULT_MR_NUM_OPPORTUNISTIC_MAPS_PERCENT = 0;
+  public static final int DEFAULT_MR_NUM_OPPORTUNISTIC_MAPS_PERCENT = 100;
 
   /**
    * A comma-separated list of properties whose value will be redacted.
