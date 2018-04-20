@@ -428,18 +428,42 @@ public class ContainersMonitorImpl extends AbstractService implements
         //long pmemByAllContainers = 0;
         //long cpuUsagePercentPerCoreByAllContainers = 0;
         //long cpuUsageTotalCoresByAllContainers = 0;
+        int groupCount=0;
         List<Thread> monitorThreads=new ArrayList<Thread>();
+        List<Entry<ContainerId, ProcessTreeInfo>> groupEntry=new ArrayList<Entry<ContainerId, ProcessTreeInfo>>();
+        
         for (Entry<ContainerId, ProcessTreeInfo> entry : trackingContainers
             .entrySet()) {
+        	if(groupCount==3){
         	Thread monitorThread = new Thread(new Runnable() {
         	    @Override
         	    public void run(){
-        	    	monitorByContainer(entry,trackedContainersUtilization);
+        	     monitorByContainerGroup(groupEntry,trackedContainersUtilization);
         	    }
         	});
         	
         	monitorThread.start();
         	monitorThreads.add(monitorThread);
+        	groupEntry.clear();
+        	groupCount=0;
+        	}else{
+        	  groupEntry.add(entry);	
+        	  groupCount++;
+        	}
+        	
+        }
+        
+        if(groupEntry.size() > 0){
+        	Thread monitorThread = new Thread(new Runnable() {
+        	    @Override
+        	    public void run(){
+        	     monitorByContainerGroup(groupEntry,trackedContainersUtilization);
+        	    }
+        	});
+        	
+        	monitorThread.start();
+        	monitorThreads.add(monitorThread);
+        	
         	
         }
         //join threads
@@ -471,6 +495,14 @@ public class ContainersMonitorImpl extends AbstractService implements
       }
     }
 
+    
+    void monitorByContainerGroup(List<Entry<ContainerId, ProcessTreeInfo>> groupEntry,
+    		                     ResourceUtilization trackedContainersUtilization
+    		                    )
+    {
+    	for(Entry<ContainerId, ProcessTreeInfo> entry : groupEntry)
+    	   monitorByContainer(entry,trackedContainersUtilization);
+    }
     
     void monitorByContainer(Entry<ContainerId, ProcessTreeInfo> entry, 
     		 ResourceUtilization trackedContainersUtilization){
