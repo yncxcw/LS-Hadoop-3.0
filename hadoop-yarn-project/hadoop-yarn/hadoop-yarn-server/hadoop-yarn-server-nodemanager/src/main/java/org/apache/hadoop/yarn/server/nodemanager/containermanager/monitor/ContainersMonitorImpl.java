@@ -406,7 +406,7 @@ public class ContainersMonitorImpl extends AbstractService implements
     public void run() {
 
       while (!stopped && !Thread.currentThread().isInterrupted()) {
-    	//LOG.info("monitor loopin");
+    	LOG.info("monitor loopin");
         // Print the processTrees for debugging.
         if (LOG.isDebugEnabled()) {
           StringBuilder tmp = new StringBuilder("[ ");

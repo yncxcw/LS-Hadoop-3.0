@@ -163,7 +163,7 @@ public class NodeResourceMonitorImpl extends AbstractService implements
         int queuingLength=containerScheduler.getNumQueuedOpportunisticContainers();
         int runningLength=containerScheduler.getRunningContainers();
         
-        LOG.info("queuing: "+queuingLength+" running: "+runningLength);
+        //LOG.info("queuing: "+queuingLength+" running: "+runningLength);
         
         if(queuingLength > 0 && !isNotAvailable){
           LOG.info("monitor try to launch containers");	
@@ -200,7 +200,8 @@ public class NodeResourceMonitorImpl extends AbstractService implements
                 (int) (pmem >> 20), // B -> MB
                 (int) (vmem >> 20), // B -> MB
                 vcores);            // Used Virtual Cores
-        		
+        
+        /*
         LOG.info("nodemonitor nodeavail: "+nodeAvailableMemory+
         		              " usedswap: "+usedSwap+
         		              " inacanon: "+inactiveAnon+
@@ -208,6 +209,7 @@ public class NodeResourceMonitorImpl extends AbstractService implements
         		              " cachemem: "+cachedMem+
         		              " vcores: "  +vcores
         		);
+        */		
         try {
           Thread.sleep(monitoringInterval);
         } catch (InterruptedException e) {
