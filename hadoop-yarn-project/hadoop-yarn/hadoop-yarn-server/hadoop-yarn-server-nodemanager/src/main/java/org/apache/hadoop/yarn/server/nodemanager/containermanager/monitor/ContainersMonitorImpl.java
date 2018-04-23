@@ -121,9 +121,10 @@ public class ContainersMonitorImpl extends AbstractService implements
   @Override
   protected void serviceInit(Configuration myConf) throws Exception {
     this.conf = myConf;
-    this.monitoringInterval =
-        this.conf.getLong(YarnConfiguration.NM_CONTAINER_MON_INTERVAL_MS,
-                YarnConfiguration.DEFAULT_NM_RESOURCE_MON_INTERVAL_MS);
+    this.monitoringInterval = 3000;
+    
+    //     this.conf.getLong(YarnConfiguration.NM_CONTAINER_MON_INTERVAL_MS,
+    //            YarnConfiguration.DEFAULT_NM_RESOURCE_MON_INTERVAL_MS);
 
     this.resourceCalculatorPlugin =
         ResourceCalculatorPlugin.getContainersMonitorPlugin(this.conf);
