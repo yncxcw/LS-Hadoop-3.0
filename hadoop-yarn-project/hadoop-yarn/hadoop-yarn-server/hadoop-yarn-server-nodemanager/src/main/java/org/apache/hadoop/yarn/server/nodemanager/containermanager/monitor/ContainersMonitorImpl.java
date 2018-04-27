@@ -429,6 +429,11 @@ public class ContainersMonitorImpl extends AbstractService implements
         //long pmemByAllContainers = 0;
         //long cpuUsagePercentPerCoreByAllContainers = 0;
         //long cpuUsageTotalCoresByAllContainers = 0;
+        
+        for (Entry<ContainerId, ProcessTreeInfo> entry : trackingContainers.entrySet()) {
+        	 monitorByContainer(entry,trackedContainersUtilization);
+        }	
+        /*
         int groupCount=0;
         List<Thread> monitorThreads=new ArrayList<Thread>();
         List<Entry<ContainerId, ProcessTreeInfo>> groupEntry=new ArrayList<Entry<ContainerId, ProcessTreeInfo>>();
@@ -476,16 +481,17 @@ public class ContainersMonitorImpl extends AbstractService implements
 				e.printStackTrace();
 			}
         }
-        // Save the aggregated utilization of the containers
-        setContainersUtilization(trackedContainersUtilization);
-        //LOG.info("monitor loopend");
         
-        //delete the thread objects
+         //delete the thread objects
         for(Thread t:monitorThreads){
         	t.interrupt();
         	t=null;
         }
-        
+        */
+        // Save the aggregated utilization of the containers
+        setContainersUtilization(trackedContainersUtilization);
+        //LOG.info("monitor loopend");
+          
         try {
           Thread.sleep(monitoringInterval);
         } catch (InterruptedException e) {
