@@ -21,7 +21,7 @@ make modules_install
 ```
 After installing, the cgth\_time can be set by:
 ```
-echo 3 > /pro/
+echo 3 > /pro/sys/vm/cgth\_time
 ```
 ## Simulation
 We are still sorting the scripts we use to parse the Google trace. The setup of simulator will be available soon.
