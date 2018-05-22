@@ -9,7 +9,7 @@ dCS relies on two component:
 For more information, please refer our paper (Currently under submission).
 
 ## Install and compile
-For building this project, plesse refer `BUILDING.txt` for detail. Since my codebase is built on `Hadoop-3.0.0`. 
+For building this project, plesse refer `BUILDING.txt` for detail. My codebase is built on `Hadoop-3.0.0`. 
 
 ## UA killer install
 Our kernel implementation of UA killer is in this: https://github.com/yncxcw/UAkiller repo. Please downlaod and install 
