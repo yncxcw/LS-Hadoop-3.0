@@ -1,6 +1,6 @@
 # dCS
 
-In this project, we exploit the to utilize the opportunitisc memory for opportunistic jobs (often used for production jobs).
+In this project, we exploit to utilize the opportunitisc memory for opportunistic jobs (often used for best-effort jobs).
 dCS relies on two component:
 
 (1) Kernel augmentation. We implement UA killer in kernel space to timely and informatively select oom candidates to kill
