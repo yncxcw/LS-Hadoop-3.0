@@ -4,6 +4,7 @@ In this project, we exploit to utilize the opportunitisc memory for opportunisti
 Charon is composed of on two components:
 
 (1) Kernel augmentation. We implement UA killer in kernel space to select oom candidates to kill in a timely and informative manner.
+
 (2) Charon implementation in NodeManager of Mercury, a daemon thread to monitor node memory and launch containers.
 
 For more information, please refer our paper (Currently under submission).
